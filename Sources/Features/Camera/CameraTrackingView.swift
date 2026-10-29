@@ -2,17 +2,23 @@ import SwiftUI
 
 struct CameraTrackingView: View {
     @StateObject private var viewModel = CameraTrackingViewModel()
+    @AppStorage("cursorControlEnabled") private var cursorControlEnabled = false
+    @AppStorage("showsCameraPreview") private var showsCameraPreview = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
-                if viewModel.isRunning {
+                if viewModel.isRunning && showsCameraPreview {
                     CameraPreview(session: viewModel.cameraManager.captureSession)
                     HandJointOverlay(joints: viewModel.joints)
                 } else {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(.black.opacity(0.08))
-                    Text("Start the camera to preview hand tracking")
+                    Text(
+                        viewModel.isRunning
+                            ? "Camera preview is hidden in settings"
+                            : "Start the camera to preview hand tracking"
+                    )
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .padding()
@@ -45,6 +51,36 @@ struct CameraTrackingView: View {
                 .frame(maxWidth: .infinity)
             }
             .disabled(viewModel.isStarting)
+
+            Toggle("Enable cursor control", isOn: $cursorControlEnabled)
+                .onChange(of: cursorControlEnabled) { _, enabled in
+                    viewModel.setCursorControlEnabled(enabled)
+                }
+            .disabled(!viewModel.isRunning && !viewModel.cursorControlEnabled)
+
+            HStack {
+                Image(
+                    systemName: viewModel.accessibilityAuthorized
+                        ? "checkmark.shield.fill"
+                        : "exclamationmark.shield.fill"
+                )
+                Text(
+                    viewModel.accessibilityAuthorized
+                        ? "Accessibility access granted"
+                        : "Accessibility access required"
+                )
+                Spacer()
+                if !viewModel.accessibilityAuthorized {
+                    Button("Request Access") { viewModel.requestAccessibilityAccess() }
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(viewModel.accessibilityAuthorized ? Color.secondary : Color.orange)
+        }
+        .onKeyPress(.escape) {
+            viewModel.emergencyStop()
+            cursorControlEnabled = false
+            return .handled
         }
     }
 }
