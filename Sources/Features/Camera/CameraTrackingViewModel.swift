@@ -15,7 +15,6 @@ final class CameraTrackingViewModel: ObservableObject {
     private let cursorCoordinator = CursorControlCoordinator.shared
 
     init() {
-        UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
         cameraManager.onFrame = { [weak self] joints, fps in
             self?.cursorCoordinator.processFrame(joints)
             Task { @MainActor in
@@ -70,6 +69,7 @@ final class CameraTrackingViewModel: ObservableObject {
             status = enabled ? "Cursor control active · Esc to stop" : "Cursor control stopped"
         } else {
             cursorControlEnabled = false
+            UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
             accessibilityAuthorized = cursorCoordinator.isAccessibilityTrusted
             status = accessibilityAuthorized
                 ? "Start the camera before enabling cursor control."

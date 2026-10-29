@@ -1,4 +1,3 @@
-import ApplicationServices
 import AppKit
 import SwiftUI
 
@@ -44,6 +43,7 @@ struct SettingsView: View {
                         let accepted = CursorControlCoordinator.shared.setEnabled(enabled)
                         if !accepted {
                             cursorControlEnabled = false
+                            accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
                             statusMessage = accessibilityAuthorized
                                 ? "Start the camera before enabling cursor control."
                                 : "Grant Accessibility access before enabling cursor control."
@@ -82,5 +82,8 @@ struct SettingsView: View {
         }
         .padding()
         .frame(minWidth: 520, minHeight: 420)
+        .onAppear {
+            accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
+        }
     }
 }

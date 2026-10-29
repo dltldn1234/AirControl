@@ -56,7 +56,16 @@ struct CameraTrackingView: View {
                 .onChange(of: cursorControlEnabled) { _, enabled in
                     viewModel.setCursorControlEnabled(enabled)
                 }
-            .disabled(!viewModel.isRunning && !viewModel.cursorControlEnabled)
+                .disabled(!viewModel.isRunning && !viewModel.cursorControlEnabled)
+
+            if viewModel.cursorControlEnabled {
+                Button("Emergency Stop · Esc") {
+                    viewModel.emergencyStop()
+                    cursorControlEnabled = false
+                }
+                .keyboardShortcut(.escape, modifiers: [])
+                .frame(maxWidth: .infinity)
+            }
 
             HStack {
                 Image(
@@ -82,6 +91,7 @@ struct CameraTrackingView: View {
             cursorControlEnabled = false
             return .handled
         }
+        .focusable()
     }
 }
 

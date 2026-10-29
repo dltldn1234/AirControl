@@ -82,8 +82,7 @@ final class CursorController {
     }
 
     func stop() {
-        eventQueue.async { [weak self] in
-            guard let self else { return }
+        eventQueue.sync {
             isEnabled = false
             releaseDrag()
             smoother.reset()
