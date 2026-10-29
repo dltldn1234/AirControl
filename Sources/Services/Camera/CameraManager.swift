@@ -1,2 +1,128 @@
-/// AVFoundation camera capture implementation.
-final class CameraManager {}
+import AVFoundation
+import CoreMedia
+import Foundation
+
+enum CameraManagerError: LocalizedError {
+    case permissionDenied
+    case cameraUnavailable
+    case cannotAddInput
+    case cannotAddOutput
+
+    var errorDescription: String? {
+        switch self {
+        case .permissionDenied:
+            "Camera access is denied. Allow it in System Settings → Privacy & Security → Camera."
+        case .cameraUnavailable:
+            "No built-in or default camera is available."
+        case .cannotAddInput:
+            "The camera input could not be added to the capture session."
+        case .cannotAddOutput:
+            "The video output could not be added to the capture session."
+        }
+    }
+}
+
+final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
+    let captureSession = AVCaptureSession()
+    var onFrame: (([HandJoint], Double) -> Void)?
+
+    private let sessionQueue = DispatchQueue(label: "aircontrol.camera.session")
+    private let frameQueue = DispatchQueue(label: "aircontrol.camera.frames", qos: .userInteractive)
+    private let handPoseDetector = HandPoseDetector()
+    private var videoOutput: AVCaptureVideoDataOutput?
+    private var lastFrameTime: CFTimeInterval?
+
+    func start() async throws {
+        var authorization = AVCaptureDevice.authorizationStatus(for: .video)
+        if authorization == .notDetermined {
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            authorization = granted ? .authorized : .denied
+        }
+        guard authorization == .authorized else {
+            throw CameraManagerError.permissionDenied
+        }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(throwing: CameraManagerError.cameraUnavailable)
+                    return
+                }
+                do {
+                    try configureSessionIfNeeded()
+                    if !captureSession.isRunning {
+                        captureSession.startRunning()
+                    }
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func stop() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            sessionQueue.async { [weak self] in
+                guard let self else {
+                    continuation.resume()
+                    return
+                }
+                captureSession.stopRunning()
+                videoOutput?.setSampleBufferDelegate(nil, queue: nil)
+                captureSession.inputs.forEach(captureSession.removeInput)
+                captureSession.outputs.forEach(captureSession.removeOutput)
+                videoOutput = nil
+                lastFrameTime = nil
+                DispatchQueue.main.async { [weak self] in
+                    self?.onFrame?([], 0)
+                }
+                continuation.resume()
+            }
+        }
+    }
+
+    private func configureSessionIfNeeded() throws {
+        guard captureSession.inputs.isEmpty, captureSession.outputs.isEmpty else { return }
+        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+            ?? AVCaptureDevice.default(for: .video) else {
+            throw CameraManagerError.cameraUnavailable
+        }
+        let input = try AVCaptureDeviceInput(device: camera)
+        let output = AVCaptureVideoDataOutput()
+        output.alwaysDiscardsLateVideoFrames = true
+        output.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ]
+        output.setSampleBufferDelegate(self, queue: frameQueue)
+
+        captureSession.beginConfiguration()
+        captureSession.sessionPreset = .high
+        guard captureSession.canAddInput(input) else {
+            captureSession.commitConfiguration()
+            throw CameraManagerError.cannotAddInput
+        }
+        captureSession.addInput(input)
+        guard captureSession.canAddOutput(output) else {
+            captureSession.removeInput(input)
+            captureSession.commitConfiguration()
+            throw CameraManagerError.cannotAddOutput
+        }
+        captureSession.addOutput(output)
+        captureSession.commitConfiguration()
+        videoOutput = output
+    }
+
+    func captureOutput(
+        _ output: AVCaptureOutput,
+        didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        let currentTime = CACurrentMediaTime()
+        let fps = lastFrameTime.map { 1 / (currentTime - $0) } ?? 0
+        lastFrameTime = currentTime
+        let joints = handPoseDetector.detect(in: pixelBuffer)
+        onFrame?(joints, fps)
+    }
+}
