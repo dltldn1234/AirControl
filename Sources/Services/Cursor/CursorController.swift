@@ -71,6 +71,37 @@ final class CursorController {
         }
     }
 
+    func scroll(delta: Double) {
+        guard isAccessibilityTrusted else { return }
+        eventQueue.async { [weak self] in
+            guard let self,
+                  CursorPermissionGate.allowsInput(
+                    isEnabled: isEnabled,
+                    isTrusted: isAccessibilityTrusted
+                  ),
+                  let event = CGEvent(
+                    scrollWheelEvent2Source: nil,
+                    units: .pixel,
+                    wheelCount: 1,
+                    wheel1: Int32(min(max(delta, -120), 120)),
+                    wheel2: 0,
+                    wheel3: 0
+                  ) else { return }
+            smoother.reset()
+            event.post(tap: .cghidEventTap)
+        }
+    }
+
+    func rightClick() {
+        guard isAccessibilityTrusted else { return }
+        eventQueue.async { [weak self] in
+            guard let self, isEnabled, !isDragging, isAccessibilityTrusted,
+                  let location = CGEvent(source: nil)?.location else { return }
+            _ = postMouseEvent(.rightMouseDown, at: location, button: .right)
+            _ = postMouseEvent(.rightMouseUp, at: location, button: .right)
+        }
+    }
+
     func click() {
         guard isAccessibilityTrusted else { return }
         eventQueue.async { [weak self] in
@@ -90,12 +121,16 @@ final class CursorController {
     }
 
     @discardableResult
-    private func postMouseEvent(_ type: CGEventType, at point: CGPoint) -> Bool {
+    private func postMouseEvent(
+        _ type: CGEventType,
+        at point: CGPoint,
+        button: CGMouseButton = .left
+    ) -> Bool {
         guard let event = CGEvent(
             mouseEventSource: nil,
             mouseType: type,
             mouseCursorPosition: point,
-            mouseButton: .left
+            mouseButton: button
         ) else { return false }
         event.post(tap: .cghidEventTap)
         return true

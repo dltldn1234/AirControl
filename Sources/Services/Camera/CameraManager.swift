@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreMedia
+import Darwin
 import Foundation
 
 enum CameraManagerError: LocalizedError {
@@ -25,12 +26,15 @@ enum CameraManagerError: LocalizedError {
 final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     let captureSession = AVCaptureSession()
     var onFrame: (([HandJoint], Double) -> Void)?
+    var onPerformance: ((Double, Double) -> Void)?
 
     private let sessionQueue = DispatchQueue(label: "aircontrol.camera.session")
     private let frameQueue = DispatchQueue(label: "aircontrol.camera.frames", qos: .userInteractive)
     private let handPoseDetector = HandPoseDetector()
     private var videoOutput: AVCaptureVideoDataOutput?
     private var lastFrameTime: CFTimeInterval?
+    private var previousCPUTime: Double?
+    private var previousCPUWallTime: CFTimeInterval?
 
     func start() async throws {
         var authorization = AVCaptureDevice.authorizationStatus(for: .video)
@@ -120,9 +124,29 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         let currentTime = CACurrentMediaTime()
-        let fps = lastFrameTime.map { 1 / (currentTime - $0) } ?? 0
-        lastFrameTime = currentTime
         let joints = handPoseDetector.detect(in: pixelBuffer)
+        let finishedTime = CACurrentMediaTime()
+        let fps = lastFrameTime.map { 1 / (finishedTime - $0) } ?? 0
+        let inferenceMilliseconds = (finishedTime - currentTime) * 1_000
+        lastFrameTime = finishedTime
+        measureCPU(at: finishedTime)
+        let cpu = currentCPUPercent
         onFrame?(joints, fps)
+        onPerformance?(inferenceMilliseconds, cpu)
+    }
+
+    private var currentCPUPercent = 0.0
+
+    private func measureCPU(at wallTime: CFTimeInterval) {
+        var usage = rusage()
+        guard getrusage(RUSAGE_SELF, &usage) == 0 else { return }
+        let user = Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) / 1_000_000
+        let system = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) / 1_000_000
+        let cpuTime = user + system
+        if let previousCPUTime, let previousCPUWallTime, wallTime > previousCPUWallTime {
+            currentCPUPercent = min(max((cpuTime - previousCPUTime) / (wallTime - previousCPUWallTime) * 100, 0), 100)
+        }
+        previousCPUTime = cpuTime
+        previousCPUWallTime = wallTime
     }
 }

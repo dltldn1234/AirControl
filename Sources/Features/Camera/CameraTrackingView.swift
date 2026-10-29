@@ -37,6 +37,18 @@ struct CameraTrackingView: View {
             }
             .font(.caption)
 
+            HStack {
+                Text(String(format: "Vision %.0f ms", viewModel.inferenceMilliseconds))
+                Spacer()
+                Text(String(format: "CPU %.0f%%", viewModel.cpuUsagePercent))
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
+
+            Label("Gesture: \(viewModel.gestureStatus.rawValue)", systemImage: "hand.draw")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
             Button {
                 if viewModel.isRunning || viewModel.isStarting {
                     viewModel.stopCamera()
