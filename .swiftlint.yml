@@ -1,0 +1,21 @@
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - Tuist
+  - .build
+  - Derived
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+  - closure_spacing
+
+line_length:
+  warning: 120
+  error: 160
+
+file_length:
+  warning: 400
+  error: 600
