@@ -41,7 +41,10 @@ final class CursorController {
         guard isAccessibilityTrusted else { return }
         eventQueue.async { [weak self] in
             guard let self,
-                  CursorPermissionGate.allowsInput(isEnabled: isEnabled, isTrusted: isAccessibilityTrusted) else { return }
+                  CursorPermissionGate.allowsInput(
+                    isEnabled: isEnabled,
+                    isTrusted: isAccessibilityTrusted
+                  ) else { return }
             let displayBounds = CGDisplayBounds(CGMainDisplayID()).insetBy(dx: 1, dy: 1)
             let boundedPoint = CGPoint(
                 x: min(max(point.x, displayBounds.minX), displayBounds.maxX),
@@ -55,7 +58,7 @@ final class CursorController {
     func beginDrag() {
         guard isAccessibilityTrusted else { return }
         eventQueue.async { [weak self] in
-            guard let self, isEnabled, !isDragging,
+            guard let self, isEnabled, !isDragging, isAccessibilityTrusted,
                   let location = CGEvent(source: nil)?.location,
                   postMouseEvent(.leftMouseDown, at: location) else { return }
             isDragging = true
@@ -71,9 +74,9 @@ final class CursorController {
     func click() {
         guard isAccessibilityTrusted else { return }
         eventQueue.async { [weak self] in
-            guard let self, isEnabled, !isDragging,
+            guard let self, isEnabled, !isDragging, isAccessibilityTrusted,
                   let location = CGEvent(source: nil)?.location else { return }
-            _ = postMouseEvent(.leftMouseDown, at: location)
+            guard postMouseEvent(.leftMouseDown, at: location) else { return }
             _ = postMouseEvent(.leftMouseUp, at: location)
         }
     }
