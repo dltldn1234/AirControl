@@ -9,8 +9,14 @@ final class CursorControlCoordinator: @unchecked Sendable {
     private var gestureRecognizer = GestureRecognizer()
     private var cameraIsRunning = false
     private var isEnabled = false
+    private var lastUIUpdate = Date.distantPast
+    private var gestureStatusHandler: ((ActiveGesture) -> Void)?
 
     var isAccessibilityTrusted: Bool { cursorController.isAccessibilityTrusted }
+
+    func setGestureStatusHandler(_ handler: ((ActiveGesture) -> Void)?) {
+        processingQueue.async { [weak self] in self?.gestureStatusHandler = handler }
+    }
 
     func requestAccessibilityAccess() -> Bool {
         cursorController.requestAccessibilityAccess()
@@ -52,11 +58,29 @@ final class CursorControlCoordinator: @unchecked Sendable {
             let smoothing = settings.object(forKey: "cursorSmoothing") as? Double ?? 0.4
             let pinchSensitivity = settings.object(forKey: "pinchSensitivity") as? Double ?? 1
             let dragDelay = settings.object(forKey: "dragStartDelay") as? Double ?? 0.45
+            let scrollSensitivity = settings.object(forKey: "scrollSensitivity") as? Double ?? 1
+            let reversesScroll = settings.bool(forKey: "reversesScrollDirection")
+            let rightClickEnabled = settings.object(forKey: "rightClickEnabled") as? Bool ?? true
+            let leftClickEnabled = settings.object(forKey: "leftClickEnabled") as? Bool ?? true
+            let dragEnabled = settings.object(forKey: "dragEnabled") as? Bool ?? true
+            let scrollEnabled = settings.object(forKey: "scrollEnabled") as? Bool ?? true
+            let cursorEnabled = settings.object(forKey: "gestureCursorEnabled") as? Bool ?? true
+            let rightClickGestureEnabled = settings.object(forKey: "rightClickGestureEnabled") as? Bool ?? true
+            let scrollGestureEnabled = settings.object(forKey: "scrollGestureEnabled") as? Bool ?? true
             let multiplier = min(max(pinchSensitivity, 0.6), 1.4)
             let configuration = GestureConfiguration(
                 pinchStartThreshold: 0.32 * multiplier,
                 pinchReleaseThreshold: 0.48 * multiplier,
-                dragStartDelay: dragDelay
+                dragStartDelay: dragDelay,
+                scrollSensitivity: scrollSensitivity,
+                reversesScrollDirection: reversesScroll,
+                rightClickEnabled: rightClickEnabled,
+                rightClickGestureEnabled: rightClickGestureEnabled,
+                cursorEnabled: cursorEnabled,
+                leftClickEnabled: leftClickEnabled,
+                dragEnabled: dragEnabled,
+                scrollEnabled: scrollEnabled,
+                scrollGestureEnabled: scrollGestureEnabled
             )
             let actions = gestureRecognizer.process(
                 joints: joints,
@@ -65,6 +89,11 @@ final class CursorControlCoordinator: @unchecked Sendable {
             )
             for action in actions {
                 handle(action, sensitivity: sensitivity, smoothing: smoothing)
+            }
+            if Date().timeIntervalSince(lastUIUpdate) >= 0.1 {
+                lastUIUpdate = Date()
+                let state = gestureRecognizer.activeGesture
+                DispatchQueue.main.async { [weak self] in self?.gestureStatusHandler?(state) }
             }
         }
     }
@@ -94,6 +123,10 @@ final class CursorControlCoordinator: @unchecked Sendable {
             cursorController.beginDrag()
         case .endDrag:
             cursorController.endDrag()
+        case .rightClick:
+            cursorController.rightClick()
+        case let .scroll(delta):
+            cursorController.scroll(delta: delta * 1_800)
         }
     }
 

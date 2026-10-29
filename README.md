@@ -40,10 +40,12 @@ Tests/                   # Unit tests
 
 Open the menu bar item and select **Start Camera**. After camera access is granted, AirControl displays the live preview, detected hand joints, hand-detection state, and frame rate. Select **Stop Camera** to stop capture and release its session inputs and outputs.
 
-Start the camera before enabling cursor control. Cursor control starts OFF each time the app launches and requires AirControl to be allowed in **System Settings → Privacy & Security → Accessibility**. The index fingertip moves the cursor; a brief thumb-index pinch clicks, while a pinch held for about 450 ms begins a drag. Releasing the pinch or losing hand tracking releases the mouse button. Turn the toggle off or press **Esc** in the menu bar panel for an emergency stop. Sensitivity, smoothing, pinch sensitivity, drag hold time, and preview visibility are saved in UserDefaults.
+Start the camera before enabling cursor control. Cursor control starts OFF each time the app launches and requires AirControl to be allowed in **System Settings → Privacy & Security → Accessibility**. The index fingertip moves the cursor; a brief thumb-index pinch clicks, while a pinch held for about 450 ms begins a drag. Holding the index and middle fingers extended and moving vertically scrolls; thumb-middle pinches right-click. Releasing a gesture or losing hand tracking safely ends active input. Turn the toggle off or press **Esc** in the menu bar panel for an emergency stop. Cursor and scroll sensitivity, smoothing, pinch sensitivity, drag hold time, gesture toggles, scroll direction, and preview visibility are saved in UserDefaults.
 
 ## Permissions
 
 The app bundle includes `NSCameraUsageDescription`. Camera access is requested only when the user selects **Start Camera**. If access is denied, allow it under **System Settings → Privacy & Security → Camera**.
 
 Cursor input is never emitted unless the camera is running, the user has enabled cursor control, and macOS reports Accessibility authorization.
+
+The tracking panel reports the current gesture, processed Vision FPS, inference latency, and estimated app CPU usage. Rendering updates are throttled separately from camera-frame inference.

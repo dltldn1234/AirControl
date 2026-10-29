@@ -8,6 +8,14 @@ struct SettingsView: View {
     @AppStorage("pinchSensitivity") private var pinchSensitivity = 1.0
     @AppStorage("dragStartDelay") private var dragStartDelay = 0.45
     @AppStorage("showsCameraPreview") private var showsCameraPreview = true
+    @AppStorage("scrollSensitivity") private var scrollSensitivity = 1.0
+    @AppStorage("reversesScrollDirection") private var reversesScrollDirection = false
+    @AppStorage("rightClickEnabled") private var rightClickEnabled = true
+    @AppStorage("gestureCursorEnabled") private var gestureCursorEnabled = true
+    @AppStorage("leftClickEnabled") private var leftClickEnabled = true
+    @AppStorage("dragEnabled") private var dragEnabled = true
+    @AppStorage("scrollEnabled") private var scrollEnabled = true
+    @AppStorage("rightClickGestureEnabled") private var rightClickGestureEnabled = true
     @State private var accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
     @State private var statusMessage = ""
 
@@ -73,6 +81,24 @@ struct SettingsView: View {
                 Slider(value: $dragStartDelay, in: 0.2...1, step: 0.05) {
                     Text("Drag hold time")
                 }
+                Slider(value: $scrollSensitivity, in: 0.4...3, step: 0.1) {
+                    Text("Scroll sensitivity")
+                } minimumValueLabel: {
+                    Text("Slow")
+                } maximumValueLabel: {
+                    Text("Fast")
+                }
+                Toggle("Reverse scroll direction", isOn: $reversesScrollDirection)
+            }
+
+            Section("Gestures") {
+                Toggle("Cursor movement", isOn: $gestureCursorEnabled)
+                Toggle("Left click", isOn: $leftClickEnabled)
+                Toggle("Drag", isOn: $dragEnabled)
+                Toggle("Two-finger scroll", isOn: $scrollEnabled)
+                Toggle("Right click enabled", isOn: $rightClickEnabled)
+                Toggle("Thumb + middle finger right click", isOn: $rightClickGestureEnabled)
+                    .disabled(!rightClickEnabled)
                 Toggle("Show camera preview", isOn: $showsCameraPreview)
                 if !statusMessage.isEmpty {
                     Text(statusMessage)
