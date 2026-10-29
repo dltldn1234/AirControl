@@ -170,21 +170,16 @@ struct GestureRecognizer {
         timestamp: TimeInterval,
         configuration: GestureConfiguration
     ) -> [GestureAction] {
-        if pose.indexPinch <= configuration.pinchStartThreshold {
-            pinchType = .click
-            activeGesture = .click
-            if configuration.dragEnabled,
+        let pinchRemainsActive = pinchType == .click
+            ? pose.indexPinch <= configuration.pinchStartThreshold
+            : pose.middlePinch <= configuration.pinchStartThreshold
+        if pinchRemainsActive {
+            if pinchType == .click, configuration.dragEnabled,
                timestamp - (pinchStartedAt ?? timestamp) >= configuration.dragStartDelay {
                 isDragging = true
                 activeGesture = .drag
                 return [.beginDrag]
             }
-            return []
-        }
-        if configuration.rightClickEnabled, configuration.rightClickGestureEnabled,
-           pose.middlePinch <= configuration.pinchStartThreshold {
-            let isRightClick = pose.middlePinch < pose.indexPinch
-            pinchType = isRightClick ? .rightClick : .click
             activeGesture = pinchType
             return []
         }

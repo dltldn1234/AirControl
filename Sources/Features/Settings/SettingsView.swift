@@ -97,9 +97,6 @@ struct SettingsView: View {
                 Toggle("Drag", isOn: $dragEnabled)
                 Toggle("Two-finger scroll", isOn: $scrollEnabled)
                 Toggle("Right click enabled", isOn: $rightClickEnabled)
-                    .onChange(of: rightClickEnabled) { _, enabled in
-                        if !enabled { rightClickGestureEnabled = false }
-                    }
                 Toggle("Thumb + middle finger right click", isOn: $rightClickGestureEnabled)
                     .disabled(!rightClickEnabled)
                 Toggle("Show camera preview", isOn: $showsCameraPreview)
