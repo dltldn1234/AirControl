@@ -2,7 +2,7 @@
 
 AirControl is a native macOS menu bar app scaffold for future hand-gesture controls. It uses SwiftUI and AppKit, with a Tuist-generated Xcode project and a service-oriented MVVM structure.
 
-> Phase 1 only establishes the project foundation. Camera tracking and macOS input events are not implemented.
+The current foundation includes live camera preview and Vision hand-joint tracking. macOS cursor and gesture controls are planned for a later phase.
 
 ## Requirements
 
@@ -36,8 +36,12 @@ Sources/
 Tests/                   # Unit tests
 ```
 
+## Camera tracking
+
+Open the menu bar item and select **Start Camera**. After camera access is granted, AirControl displays the live preview, detected hand joints, hand-detection state, and frame rate. Select **Stop Camera** to stop capture and release its session inputs and outputs.
+
 ## Permissions
 
-The app bundle includes `NSCameraUsageDescription` so the camera purpose is declared before camera capture is implemented. Phase 1 does not request camera access.
+The app bundle includes `NSCameraUsageDescription`. Camera access is requested only when the user selects **Start Camera**. If access is denied, allow it under **System Settings → Privacy & Security → Camera**.
 
-Future system cursor input will require the user to grant AirControl access under **System Settings → Privacy & Security → Accessibility**. Phase 1 does not request Accessibility access or post system input events.
+Future system cursor input will require the user to grant AirControl access under **System Settings → Privacy & Security → Accessibility**. Cursor control is not implemented yet.

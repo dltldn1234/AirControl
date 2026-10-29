@@ -12,6 +12,8 @@ struct MenuBarView: View {
             Text(viewModel.statusMessage)
                 .foregroundStyle(.secondary)
 
+            CameraTrackingView()
+
             Divider()
 
             SettingsLink {
@@ -23,6 +25,6 @@ struct MenuBarView: View {
             }
         }
         .padding()
-        .frame(width: 260)
+        .frame(width: 420)
     }
 }
