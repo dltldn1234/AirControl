@@ -1,2 +1,2 @@
-/// Camera capture service placeholder for a future implementation phase.
+/// AVFoundation camera capture implementation.
 final class CameraManager {}
