@@ -6,6 +6,7 @@ final class CursorControlCoordinator: @unchecked Sendable {
 
     private let processingQueue = DispatchQueue(label: "aircontrol.cursor.processing", qos: .userInteractive)
     private let cursorController = CursorController()
+    private let windowCoordinator = WindowControlCoordinator()
     private var gestureRecognizer = GestureRecognizer()
     private var cameraIsRunning = false
     private var isEnabled = false
@@ -13,9 +14,14 @@ final class CursorControlCoordinator: @unchecked Sendable {
     private var gestureStatusHandler: ((ActiveGesture) -> Void)?
 
     var isAccessibilityTrusted: Bool { cursorController.isAccessibilityTrusted }
+    var isWindowControlAccessibilityTrusted: Bool { windowCoordinator.isAccessibilityTrusted }
 
     func setGestureStatusHandler(_ handler: ((ActiveGesture) -> Void)?) {
         processingQueue.async { [weak self] in self?.gestureStatusHandler = handler }
+    }
+
+    func setWindowStatusHandler(_ handler: ((WindowGestureMode, String, String) -> Void)?) {
+        processingQueue.async { [weak self] in self?.windowCoordinator.setStatusHandler(handler) }
     }
 
     func requestAccessibilityAccess() -> Bool {
@@ -45,63 +51,75 @@ final class CursorControlCoordinator: @unchecked Sendable {
         processingQueue.sync {
             cameraIsRunning = running
             if !running {
+                windowCoordinator.stop()
                 stopControl()
             }
         }
     }
 
     func processFrame(_ joints: [HandJoint]) {
+        processFrame([joints])
+    }
+
+    func processFrame(_ hands: [[HandJoint]]) {
         processingQueue.async { [weak self] in
-            guard let self, isEnabled else { return }
+            guard let self, cameraIsRunning else { return }
+            let suppressCursor = windowCoordinator.processFrame(
+                hands,
+                timestamp: ProcessInfo.processInfo.systemUptime
+            )
+            guard !suppressCursor, isEnabled, let joints = hands.first else { return }
             let settings = UserDefaults.standard
-            let sensitivity = settings.object(forKey: "cursorSensitivity") as? Double ?? 1
-            let smoothing = settings.object(forKey: "cursorSmoothing") as? Double ?? 0.4
-            let pinchSensitivity = settings.object(forKey: "pinchSensitivity") as? Double ?? 1
-            let dragDelay = settings.object(forKey: "dragStartDelay") as? Double ?? 0.45
-            let scrollSensitivity = settings.object(forKey: "scrollSensitivity") as? Double ?? 1
-            let reversesScroll = settings.bool(forKey: "reversesScrollDirection")
-            let rightClickEnabled = settings.object(forKey: "rightClickEnabled") as? Bool ?? true
-            let leftClickEnabled = settings.object(forKey: "leftClickEnabled") as? Bool ?? true
-            let dragEnabled = settings.object(forKey: "dragEnabled") as? Bool ?? true
-            let scrollEnabled = settings.object(forKey: "scrollEnabled") as? Bool ?? true
-            let cursorEnabled = settings.object(forKey: "gestureCursorEnabled") as? Bool ?? true
-            let rightClickGestureEnabled = settings.object(forKey: "rightClickGestureEnabled") as? Bool ?? true
-            let scrollGestureEnabled = settings.object(forKey: "scrollGestureEnabled") as? Bool ?? true
-            let multiplier = min(max(pinchSensitivity, 0.6), 1.4)
-            let configuration = GestureConfiguration(
-                pinchStartThreshold: 0.32 * multiplier,
-                pinchReleaseThreshold: 0.48 * multiplier,
-                dragStartDelay: dragDelay,
-                scrollSensitivity: scrollSensitivity,
-                reversesScrollDirection: reversesScroll,
-                rightClickEnabled: rightClickEnabled,
-                rightClickGestureEnabled: rightClickGestureEnabled,
-                cursorEnabled: cursorEnabled,
-                leftClickEnabled: leftClickEnabled,
-                dragEnabled: dragEnabled,
-                scrollEnabled: scrollEnabled,
-                scrollGestureEnabled: scrollGestureEnabled
-            )
-            let actions = gestureRecognizer.process(
-                joints: joints,
-                timestamp: ProcessInfo.processInfo.systemUptime,
-                configuration: configuration
-            )
-            for action in actions {
-                handle(action, sensitivity: sensitivity, smoothing: smoothing)
-            }
-            if Date().timeIntervalSince(lastUIUpdate) >= 0.1 {
-                lastUIUpdate = Date()
-                let state = gestureRecognizer.activeGesture
-                DispatchQueue.main.async { [weak self] in self?.gestureStatusHandler?(state) }
-            }
+            processCursorFrame(joints, settings: settings)
         }
+    }
+
+    private func processCursorFrame(_ joints: [HandJoint], settings: UserDefaults) {
+        let sensitivity = settings.object(forKey: "cursorSensitivity") as? Double ?? 1
+        let smoothing = settings.object(forKey: "cursorSmoothing") as? Double ?? 0.4
+        let multiplier = min(max(settings.object(forKey: "pinchSensitivity") as? Double ?? 1, 0.6), 1.4)
+        let configuration = GestureConfiguration(
+            pinchStartThreshold: 0.32 * multiplier,
+            pinchReleaseThreshold: 0.48 * multiplier,
+            dragStartDelay: settings.object(forKey: "dragStartDelay") as? Double ?? 0.45,
+            scrollSensitivity: settings.object(forKey: "scrollSensitivity") as? Double ?? 1,
+            reversesScrollDirection: settings.bool(forKey: "reversesScrollDirection"),
+            rightClickEnabled: settings.object(forKey: "rightClickEnabled") as? Bool ?? true,
+            rightClickGestureEnabled: settings.object(forKey: "rightClickGestureEnabled") as? Bool ?? true,
+            cursorEnabled: settings.object(forKey: "gestureCursorEnabled") as? Bool ?? true,
+            leftClickEnabled: settings.object(forKey: "leftClickEnabled") as? Bool ?? true,
+            dragEnabled: settings.object(forKey: "dragEnabled") as? Bool ?? true,
+            scrollEnabled: settings.object(forKey: "scrollEnabled") as? Bool ?? true,
+            scrollGestureEnabled: settings.object(forKey: "scrollGestureEnabled") as? Bool ?? true
+        )
+        let actions = gestureRecognizer.process(
+            joints: joints,
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            configuration: configuration
+        )
+        actions.forEach { handle($0, sensitivity: sensitivity, smoothing: smoothing) }
+        guard Date().timeIntervalSince(lastUIUpdate) >= 0.1 else { return }
+        lastUIUpdate = Date()
+        let state = gestureRecognizer.activeGesture
+        DispatchQueue.main.async { [weak self] in self?.gestureStatusHandler?(state) }
     }
 
     func stop() {
         processingQueue.sync {
             isEnabled = false
             cameraIsRunning = false
+            windowCoordinator.stop(message: "App stopped; window control ended.")
+            stopControl()
+        }
+    }
+
+    func emergencyStop() {
+        processingQueue.sync {
+            UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
+            UserDefaults.standard.set(false, forKey: "windowControlEnabled")
+            UserDefaults.standard.set(false, forKey: "appSwitchEnabled")
+            isEnabled = false
+            windowCoordinator.stop(message: "Emergency stop · all gesture controls are off.")
             stopControl()
         }
     }
