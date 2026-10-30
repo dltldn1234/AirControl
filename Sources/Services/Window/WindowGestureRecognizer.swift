@@ -87,6 +87,7 @@ struct WindowGestureRecognizer {
     private var palmStartedAt: TimeInterval?
     private var fistStartedAt: TimeInterval?
     private var pinchStarted = false
+    private var ignoreOpenPalmUntilRelease = false
     private var appSwipeStart: (x: Double, time: TimeInterval)?
     private var lastAppSwitchAt = -Double.infinity
     private var resizeTracker = TwoHandResizeTracker()
@@ -129,6 +130,7 @@ struct WindowGestureRecognizer {
         fistStartedAt = nil
         appSwipeStart = nil
         pinchStarted = false
+        ignoreOpenPalmUntilRelease = false
         return actions
     }
 
@@ -140,6 +142,7 @@ struct WindowGestureRecognizer {
         guard let hand = hands.first else { return result([], suppress: false) }
         if configuration.windowControlEnabled, isOpenPalm(hand) {
             appSwipeStart = nil
+            guard !ignoreOpenPalmUntilRelease else { return result([], suppress: true) }
             let start = palmStartedAt ?? timestamp
             palmStartedAt = start
             guard timestamp - start >= configuration.palmHoldDuration else {
@@ -149,6 +152,7 @@ struct WindowGestureRecognizer {
             palmStartedAt = nil
             return result([.enterWindowControl], suppress: true)
         }
+        ignoreOpenPalmUntilRelease = false
         palmStartedAt = nil
         if configuration.appSwitchEnabled, !isOpenPalm(hand), isThreeFingerPose(hand) {
             return processAppSwipe(hand, timestamp: timestamp, cooldown: configuration.appSwitchCooldown)
@@ -257,6 +261,11 @@ struct WindowGestureRecognizer {
         pinchStarted = false
         resizeTracker.reset()
         return result([.exitWindowControl], suppress: true)
+    }
+
+    mutating func rejectWindowControlUntilRelease() {
+        _ = reset()
+        ignoreOpenPalmUntilRelease = true
     }
 
     private mutating func resetActiveGesture() -> [WindowGestureAction] {

@@ -119,6 +119,26 @@ struct TwoHandResizeTrackerTests {
     }
 
     @Test
+    func rejectedWindowEntryWaitsForPalmReleaseBeforeRetrying() {
+        var recognizer = WindowGestureRecognizer()
+        let configuration = WindowGestureConfiguration(enabled: true, windowControlEnabled: true)
+        _ = recognizer.process(hands: [openHand()], timestamp: 1, configuration: configuration)
+        let entry = recognizer.process(hands: [openHand()], timestamp: 1.75, configuration: configuration)
+        recognizer.rejectWindowControlUntilRelease()
+
+        let held = recognizer.process(hands: [openHand()], timestamp: 3, configuration: configuration)
+        let released = recognizer.process(hands: [fistHand()], timestamp: 3.1, configuration: configuration)
+        _ = recognizer.process(hands: [openHand()], timestamp: 4, configuration: configuration)
+        let retried = recognizer.process(hands: [openHand()], timestamp: 4.75, configuration: configuration)
+
+        #expect(entry.actions == [.enterWindowControl])
+        #expect(held.actions.isEmpty)
+        #expect(held.suppressCursor)
+        #expect(released.mode == .cursorControl)
+        #expect(retried.actions == [.enterWindowControl])
+    }
+
+    @Test
     func threeFingerSwipeSwitchesAppsWithoutEnteringWindowMode() {
         var recognizer = WindowGestureRecognizer()
         let configuration = WindowGestureConfiguration(enabled: true, appSwitchEnabled: true)
