@@ -22,9 +22,9 @@ final class WindowControlCoordinator {
         let appSwitchEnabled = settings.bool(forKey: "appSwitchEnabled")
         let trusted = windowManager.isAccessibilityTrusted
         let configuration = WindowGestureConfiguration(
-            enabled: (windowEnabled || appSwitchEnabled) && trusted,
+            enabled: appSwitchEnabled || (windowEnabled && trusted),
             windowControlEnabled: windowEnabled && trusted,
-            appSwitchEnabled: appSwitchEnabled && trusted,
+            appSwitchEnabled: appSwitchEnabled,
             twoHandResizeEnabled: settings.bool(forKey: "twoHandResizeEnabled"),
             moveSensitivity: settings.object(forKey: "windowMoveSensitivity") as? Double ?? 1,
             resizeSmoothing: settings.object(forKey: "windowResizeSmoothing") as? Double ?? 0.25
@@ -61,9 +61,13 @@ final class WindowControlCoordinator {
         case .beginResizing, .resizeWindow, .endResizing:
             handleResize(action)
         case let .switchApp(direction):
-            statusMessage = appSwitcher.activateNext(direction: direction)
-                ? "Switched application."
-                : "No other visible application is running."
+            guard let application = appSwitcher.activateNext(direction: direction) else {
+                statusMessage = "No other visible application is running."
+                return
+            }
+            windowManager.clearSelection()
+            targetDescription = application.localizedName
+            statusMessage = "Activation requested for \(application.localizedName)."
         }
     }
 
@@ -73,7 +77,7 @@ final class WindowControlCoordinator {
                 ? "The active app does not expose a controllable window."
                 : "Grant Accessibility access to control windows."
             targetDescription = "No window selected"
-            _ = recognizer.reset()
+            recognizer.rejectWindowControlUntilRelease()
             return
         }
         updateTarget(target)
@@ -120,7 +124,7 @@ final class WindowControlCoordinator {
 
     private func failCurrentGesture(_ message: String) {
         statusMessage = message
-        _ = recognizer.reset()
+        recognizer.rejectWindowControlUntilRelease()
         windowManager.endManipulation()
         windowManager.clearSelection()
         targetDescription = "No window selected"

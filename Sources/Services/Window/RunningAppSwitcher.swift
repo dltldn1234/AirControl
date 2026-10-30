@@ -34,18 +34,24 @@ final class RunningAppSwitcher {
         }
     }
 
-    @discardableResult
-    func activateNext(direction: Int) -> Bool {
-        let applications = visibleApplications
-        guard !applications.isEmpty else { return false }
+    func activateNext(direction: Int) -> RunningAppInfo? {
+        let applications = visibleApplications.compactMap { application -> (NSRunningApplication, RunningAppInfo)? in
+            guard let bundleIdentifier = application.bundleIdentifier else { return nil }
+            let info = RunningAppInfo(
+                bundleIdentifier: bundleIdentifier,
+                localizedName: application.localizedName ?? bundleIdentifier
+            )
+            return (application, info)
+        }
+        guard !applications.isEmpty else { return nil }
         let frontmostBundle = workspace.frontmostApplication?.bundleIdentifier
-        let currentIndex = applications.firstIndex { $0.bundleIdentifier == frontmostBundle } ?? 0
+        let currentIndex = applications.firstIndex { $0.1.bundleIdentifier == frontmostBundle } ?? 0
         let step = direction >= 0 ? 1 : -1
         let nextIndex = (currentIndex + step + applications.count) % applications.count
-        let application = applications[nextIndex]
+        let (application, info) = applications[nextIndex]
         DispatchQueue.main.async {
             _ = application.activate(options: [.activateAllWindows])
         }
-        return true
+        return info
     }
 }
