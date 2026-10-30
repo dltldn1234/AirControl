@@ -25,7 +25,7 @@ enum CameraManagerError: LocalizedError {
 
 final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     let captureSession = AVCaptureSession()
-    var onFrame: (([HandJoint], Double) -> Void)?
+    var onFrame: (([[HandJoint]], Double) -> Void)?
     var onPerformance: ((Double, Double) -> Void)?
 
     private let sessionQueue = DispatchQueue(label: "aircontrol.camera.session")
@@ -124,14 +124,14 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         let currentTime = CACurrentMediaTime()
-        let joints = handPoseDetector.detect(in: pixelBuffer)
+        let hands = handPoseDetector.detect(in: pixelBuffer)
         let finishedTime = CACurrentMediaTime()
         let fps = lastFrameTime.map { 1 / (finishedTime - $0) } ?? 0
         let inferenceMilliseconds = (finishedTime - currentTime) * 1_000
         lastFrameTime = finishedTime
         measureCPU(at: finishedTime)
         let cpu = currentCPUPercent
-        onFrame?(joints, fps)
+        onFrame?(hands, fps)
         onPerformance?(inferenceMilliseconds, cpu)
     }
 
