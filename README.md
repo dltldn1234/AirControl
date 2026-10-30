@@ -49,3 +49,5 @@ The app bundle includes `NSCameraUsageDescription`. Camera access is requested o
 Cursor input is never emitted unless the camera is running, the user has enabled cursor control, and macOS reports Accessibility authorization.
 
 The tracking panel reports the current gesture, processed Vision FPS, inference latency, and estimated app CPU usage. Rendering updates are throttled separately from camera-frame inference.
+
+Window and app controls are opt-in in Settings and require Accessibility permission. Hold an open palm to enter window mode, pinch and move to reposition the focused window, use two open hands to resize, and hold a fist to exit. A three-finger horizontal swipe switches among visible regular applications. Some apps do not expose writable AX window attributes; AirControl skips those windows. macOS Spaces and full-screen desktop navigation are not controlled.
