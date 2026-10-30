@@ -49,6 +49,24 @@ struct CameraTrackingView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
+            VStack(alignment: .leading, spacing: 3) {
+                Label("Mode: \(viewModel.windowGestureMode.rawValue)", systemImage: "macwindow")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(viewModel.windowGestureMode == .idle ? Color.secondary : Color.blue)
+                Text(viewModel.windowTarget)
+                    .font(.caption2)
+                    .lineLimit(1)
+                if !viewModel.windowControlStatus.isEmpty {
+                    Text(viewModel.windowControlStatus)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(8)
+            .background(.blue.opacity(viewModel.windowGestureMode == .idle ? 0.04 : 0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
             Button {
                 if viewModel.isRunning || viewModel.isStarting {
                     viewModel.stopCamera()

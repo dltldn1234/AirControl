@@ -16,6 +16,14 @@ struct SettingsView: View {
     @AppStorage("dragEnabled") private var dragEnabled = true
     @AppStorage("scrollEnabled") private var scrollEnabled = true
     @AppStorage("rightClickGestureEnabled") private var rightClickGestureEnabled = true
+    @AppStorage("windowControlEnabled") private var windowControlEnabled = false
+    @AppStorage("windowMoveSensitivity") private var windowMoveSensitivity = 1.0
+    @AppStorage("windowResizeSmoothing") private var windowResizeSmoothing = 0.25
+    @AppStorage("appSwitchEnabled") private var appSwitchEnabled = false
+    @AppStorage("twoHandResizeEnabled") private var twoHandResizeEnabled = false
+    @AppStorage("windowGestureMode") private var windowGestureMode = WindowGestureMode.idle.rawValue
+    @AppStorage("windowControlTarget") private var windowControlTarget = "No window selected"
+    @AppStorage("windowControlStatus") private var windowControlStatus = ""
     @State private var accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
     @State private var statusMessage = ""
 
@@ -104,6 +112,40 @@ struct SettingsView: View {
                     Text(statusMessage)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section("Window and app control") {
+                LabeledContent("Current mode", value: windowGestureMode)
+                LabeledContent("Control target", value: windowControlTarget)
+                if !windowControlStatus.isEmpty {
+                    Text(windowControlStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Toggle("Window control mode", isOn: $windowControlEnabled)
+                Slider(value: $windowMoveSensitivity, in: 0.4...2, step: 0.1) {
+                    Text("Window move sensitivity")
+                } minimumValueLabel: {
+                    Text("Low")
+                } maximumValueLabel: {
+                    Text("High")
+                }
+                Slider(value: $windowResizeSmoothing, in: 0.05...0.8, step: 0.05) {
+                    Text("Resize smoothing")
+                } minimumValueLabel: {
+                    Text("Responsive")
+                } maximumValueLabel: {
+                    Text("Steady")
+                }
+                Toggle("Two-hand window resizing", isOn: $twoHandResizeEnabled)
+                    .disabled(!windowControlEnabled)
+                Toggle("Three-finger app switching", isOn: $appSwitchEnabled)
+                Text(
+                    "Hold an open palm to enter window mode. Hold a fist to exit. "
+                        + "Window and app control require Accessibility access."
+                )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding()

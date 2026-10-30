@@ -13,6 +13,9 @@ final class CameraTrackingViewModel: ObservableObject {
     @Published private(set) var cursorControlEnabled = false
     @Published private(set) var accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
     @Published private(set) var gestureStatus = ActiveGesture.trackingLost
+    @Published private(set) var windowGestureMode = WindowGestureMode.idle
+    @Published private(set) var windowTarget = "No window selected"
+    @Published private(set) var windowControlStatus = ""
 
     let cameraManager = CameraManager()
     private let cursorCoordinator = CursorControlCoordinator.shared
@@ -23,15 +26,20 @@ final class CameraTrackingViewModel: ObservableObject {
         cursorCoordinator.setGestureStatusHandler { [weak self] state in
             self?.gestureStatus = state
         }
-        cameraManager.onFrame = { [weak self] joints, fps in
-            self?.cursorCoordinator.processFrame(joints)
+        cursorCoordinator.setWindowStatusHandler { [weak self] mode, target, message in
+            self?.windowGestureMode = mode
+            self?.windowTarget = target
+            self?.windowControlStatus = message
+        }
+        cameraManager.onFrame = { [weak self] hands, fps in
+            self?.cursorCoordinator.processFrame(hands)
             Task { @MainActor in
                 let now = ProcessInfo.processInfo.systemUptime
                 guard now - (self?.lastFrameUIUpdate ?? 0) >= 1.0 / 20 else { return }
                 self?.lastFrameUIUpdate = now
-                self?.joints = joints
+                self?.joints = hands.flatMap { $0 }
                 self?.framesPerSecond = fps
-                self?.status = joints.isEmpty ? "No hand detected" : "Hand detected"
+                self?.status = hands.isEmpty ? "No hand detected" : "Hand detected · \(hands.count)"
             }
         }
         cameraManager.onPerformance = { [weak self] inferenceMilliseconds, cpuUsagePercent in
@@ -66,12 +74,15 @@ final class CameraTrackingViewModel: ObservableObject {
         guard isRunning || isStarting else { return }
         cursorCoordinator.setCameraRunning(false)
         cursorControlEnabled = false
+        UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
         isStarting = false
         isRunning = false
         status = "Stopping camera…"
         Task {
             await cameraManager.stop()
             joints = []
+            windowGestureMode = .idle
+            windowTarget = "No window selected"
             framesPerSecond = 0
             inferenceMilliseconds = 0
             cpuUsagePercent = 0
@@ -109,6 +120,11 @@ final class CameraTrackingViewModel: ObservableObject {
     }
 
     func emergencyStop() {
-        setCursorControlEnabled(false)
+        cursorCoordinator.emergencyStop()
+        cursorControlEnabled = false
+        gestureStatus = .trackingLost
+        windowGestureMode = .idle
+        windowTarget = "No window selected"
+        windowControlStatus = "Emergency stop · all gesture controls are off."
     }
 }
