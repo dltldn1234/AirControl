@@ -15,6 +15,10 @@ final class WindowManager {
     private var moveStartFrame: WindowFrame?
     private var moveAnchor: CGPoint?
     private var resizeStartFrame: WindowFrame?
+    private var minimumWindowSize = CGSize(width: 160, height: 120)
+    private var maximumWindowSize = CGSize.zero
+    private var positionAttributeSettable = false
+    private var sizeAttributeSettable = false
     private var lastAXOperation = 0.0
     private let minimumOperationInterval = 1.0 / 30
 
@@ -32,13 +36,20 @@ final class WindowManager {
     }
 
     func selectActiveWindow() -> WindowTargetInfo? {
-        guard let (application, window) = focusedWindow(),
-              WindowPermissionGate.allowsWindowControl(
-                isTrusted: isAccessibilityTrusted,
-                positionSettable: isPositionSettable(window),
-                sizeSettable: isSizeSettable(window)
-              ),
-              let frame = readFrame(window) else { return nil }
+        guard let (application, window) = focusedWindow() else {
+            clearSelection()
+            return nil
+        }
+        positionAttributeSettable = isPositionSettable(window)
+        sizeAttributeSettable = isSizeSettable(window)
+        guard WindowPermissionGate.allowsWindowControl(
+            isTrusted: isAccessibilityTrusted,
+            positionSettable: positionAttributeSettable,
+            sizeSettable: sizeAttributeSettable
+        ), let frame = readFrame(window) else {
+            clearSelection()
+            return nil
+        }
         selectedWindow = window
         let info = WindowTargetInfo(
             applicationName: stringAttribute(application, kAXTitleAttribute as CFString) ?? "Active application",
@@ -55,8 +66,7 @@ final class WindowManager {
     }
 
     func beginMoving(at anchor: CGPoint) -> WindowTargetInfo? {
-        guard let info = selectActiveWindow(), let selectedWindow,
-              isPositionSettable(selectedWindow) else { return nil }
+        guard let info = selectActiveWindow(), positionAttributeSettable else { return nil }
         moveStartFrame = info.frame
         moveAnchor = anchor
         return info
@@ -64,7 +74,7 @@ final class WindowManager {
 
     func moveSelectedWindow(to handPosition: CGPoint, sensitivity: Double) -> WindowTargetInfo? {
         guard let moveStartFrame, let moveAnchor, let selectedWindow,
-              isAccessibilityTrusted, isPositionSettable(selectedWindow) else { return nil }
+              isAccessibilityTrusted, positionAttributeSettable else { return nil }
         let delta = WindowGeometry.handDelta(
             from: moveAnchor,
             to: handPosition,
@@ -98,20 +108,22 @@ final class WindowManager {
     }
 
     func beginResizing() -> WindowTargetInfo? {
-        guard let info = selectActiveWindow(), let selectedWindow, isSizeSettable(selectedWindow) else { return nil }
+        guard let info = selectActiveWindow(), let selectedWindow, sizeAttributeSettable else { return nil }
         resizeStartFrame = info.frame
+        let limits = readSizeLimits(selectedWindow)
+        minimumWindowSize = limits.minimum
+        maximumWindowSize = limits.maximum
         return info
     }
 
     func resizeSelectedWindow(fromScale scale: Double, smoothing: Double) -> WindowTargetInfo? {
         guard canPerformAXOperation(), let selectedWindow, let resizeStartFrame,
-              isSizeSettable(selectedWindow) else { return nil }
-        let limits = readSizeLimits(selectedWindow)
+              sizeAttributeSettable else { return nil }
         let adjusted = WindowGeometry.resized(
             resizeStartFrame,
             scale: scale,
-            minimumSize: limits.minimum,
-            maximumSize: limits.maximum,
+            minimumSize: minimumWindowSize,
+            maximumSize: maximumWindowSize,
             displayBounds: displayBounds
         )
         let current = cachedTargetInfo?.frame ?? resizeStartFrame
@@ -131,7 +143,7 @@ final class WindowManager {
             ),
             within: displayBounds
         )
-        if isPositionSettable(selectedWindow) {
+        if positionAttributeSettable {
             _ = setPoint(
                 CGPoint(x: frame.originX, y: frame.originY),
                 on: selectedWindow,
@@ -151,11 +163,15 @@ final class WindowManager {
         moveStartFrame = nil
         moveAnchor = nil
         resizeStartFrame = nil
+        minimumWindowSize = CGSize(width: 160, height: 120)
+        maximumWindowSize = .zero
     }
 
     func clearSelection() {
         selectedWindow = nil
         cachedTargetInfo = nil
+        positionAttributeSettable = false
+        sizeAttributeSettable = false
     }
 
     private func canPerformAXOperation() -> Bool {
