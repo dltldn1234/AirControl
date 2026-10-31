@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -239,5 +240,91 @@ struct WindowControlSettingsSection: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
+    }
+}
+
+struct CameraDeviceSettingsSection: View {
+    @AppStorage("showsCameraPreview") private var showsCameraPreview = true
+    @AppStorage("selectedCameraUniqueID") private var selectedCameraUniqueID = ""
+    @State private var cameras = CameraManager.availableCameras()
+    @State private var authorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
+
+    var body: some View {
+        Section("Camera") {
+            Toggle("Show camera preview", isOn: $showsCameraPreview)
+            HStack {
+                Label(authorizationMessage, systemImage: authorizationSymbol)
+                    .foregroundStyle(authorizationStatus == .denied ? .orange : .secondary)
+                Spacer()
+                Button("Refresh") {
+                    refreshCameras()
+                }
+                .accessibilityHint("Refreshes the list of available video cameras.")
+            }
+            if cameras.isEmpty {
+                Label("No cameras found", systemImage: "video.slash")
+                    .foregroundStyle(.secondary)
+                Text("Connect a camera, then refresh this list.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Picker("Camera device", selection: $selectedCameraUniqueID) {
+                    Text("Automatic · built-in first").tag("")
+                    ForEach(cameras) { camera in
+                        Text(camera.isBuiltIn ? "\(camera.name) · Built-in" : camera.name)
+                            .tag(camera.id)
+                    }
+                }
+                if !selectedCameraUniqueID.isEmpty,
+                   !cameras.contains(where: { $0.id == selectedCameraUniqueID }) {
+                    Label("Saved camera is disconnected; the next start will use a fallback camera.",
+                          systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+            Text("Camera selection takes effect the next time you start the camera.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if authorizationStatus == .denied || authorizationStatus == .restricted {
+                Button("Open Camera Privacy Settings") {
+                    guard let url = URL(
+                        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
+                    ) else { return }
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
+        .onAppear(perform: refreshCameras)
+        .onReceive(NotificationCenter.default.publisher(for: .AVCaptureDeviceWasConnected)) { _ in
+            refreshCameras()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .AVCaptureDeviceWasDisconnected)) { _ in
+            refreshCameras()
+        }
+    }
+
+    private var authorizationMessage: String {
+        switch authorizationStatus {
+        case .authorized:
+            "Camera access granted"
+        case .notDetermined:
+            "Camera permission is requested when capture starts"
+        case .denied:
+            "Camera access is denied"
+        case .restricted:
+            "Camera access is restricted"
+        @unknown default:
+            "Camera access status is unavailable"
+        }
+    }
+
+    private var authorizationSymbol: String {
+        authorizationStatus == .authorized ? "checkmark.shield.fill" : "camera"
+    }
+
+    private func refreshCameras() {
+        cameras = CameraManager.availableCameras()
+        authorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
 }

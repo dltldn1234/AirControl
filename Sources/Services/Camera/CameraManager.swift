@@ -3,6 +3,24 @@ import CoreMedia
 import Darwin
 import Foundation
 
+struct CameraDeviceChoice: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let isBuiltIn: Bool
+}
+
+enum CameraDeviceSelection {
+    static func resolve(preferredID: String?, availableIDs: [String], frontCameraID: String?) -> String? {
+        if let preferredID, availableIDs.contains(preferredID) {
+            return preferredID
+        }
+        if let frontCameraID, availableIDs.contains(frontCameraID) {
+            return frontCameraID
+        }
+        return availableIDs.first
+    }
+}
+
 enum CameraManagerError: LocalizedError {
     case permissionDenied
     case cameraUnavailable
@@ -14,7 +32,7 @@ enum CameraManagerError: LocalizedError {
         case .permissionDenied:
             "Camera access is denied. Allow it in System Settings → Privacy & Security → Camera."
         case .cameraUnavailable:
-            "No built-in or default camera is available."
+            "No supported video camera is available."
         case .cannotAddInput:
             "The camera input could not be added to the capture session."
         case .cannotAddOutput:
@@ -75,6 +93,21 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
 
     deinit {
         notificationObservers.forEach(NotificationCenter.default.removeObserver)
+    }
+
+    static func availableCameras() -> [CameraDeviceChoice] {
+        let discovery = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera, .external],
+            mediaType: .video,
+            position: .unspecified
+        )
+        return discovery.devices.map { camera in
+            CameraDeviceChoice(
+                id: camera.uniqueID,
+                name: camera.localizedName,
+                isBuiltIn: camera.deviceType == .builtInWideAngleCamera
+            )
+        }
     }
 
     func start() async throws {
@@ -186,8 +219,21 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
 
     private func configureSessionIfNeeded() throws {
         guard captureSession.inputs.isEmpty, captureSession.outputs.isEmpty else { return }
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-            ?? AVCaptureDevice.default(for: .video) else {
+        let devices = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera, .external],
+            mediaType: .video,
+            position: .unspecified
+        ).devices
+        let availableIDs = devices.map(\.uniqueID)
+        let preferredID = UserDefaults.standard.string(forKey: "selectedCameraUniqueID")
+        let frontCameraID = devices.first(where: {
+            $0.deviceType == .builtInWideAngleCamera && $0.position == .front
+        })?.uniqueID
+        guard let selectedID = CameraDeviceSelection.resolve(
+            preferredID: preferredID,
+            availableIDs: availableIDs,
+            frontCameraID: frontCameraID
+        ), let camera = devices.first(where: { $0.uniqueID == selectedID }) else {
             throw CameraManagerError.cameraUnavailable
         }
         let input = try AVCaptureDeviceInput(device: camera)

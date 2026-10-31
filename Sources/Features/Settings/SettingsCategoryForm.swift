@@ -69,14 +69,7 @@ struct SettingsCategoryForm: View {
                 SettingsBackupSection()
             }
             if category == .camera {
-                Section("Camera") {
-                    Toggle("Show camera preview", isOn: $showsCameraPreview)
-                    Label(
-                        "Camera access is requested when you start the camera.",
-                        systemImage: "camera"
-                    )
-                    .foregroundStyle(.secondary)
-                }
+                CameraDeviceSettingsSection()
                 CalibrationSettingsSection()
             }
             if category == .cursor {
