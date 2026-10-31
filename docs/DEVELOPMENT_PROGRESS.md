@@ -9,10 +9,14 @@ Updated: 2026-11-01
 - One Euro cursor filtering and multi-display coordinate mapping are implemented and covered by unit tests.
 - Calibration wizard now captures a normalized cursor area and pinch thresholds, stores a local per-user profile, and exposes mirror control and reset in Settings.
 - The latest macOS unit-test run passed after adding calibration tests. Strict SwiftLint passed with zero violations.
-- Phase 8 Issue #19 is in progress on branch `19-feat/native-ui-docs`; menu toggle state recovery and seven project guides have been added locally.
-- Phase 9–10 Issue #21 is in progress on branch `21-feat/camera-reliability-ci`.
+- Phase 8 Issue #19 was merged through PR #20; menu control state recovery and project documentation are on `main`.
+- Phase 8 remains partial: the full Dashboard, Camera Preview, Settings, Air Keyboard, and accessibility design audit was not completed.
+- Phase 9–10 Issue #21 was merged through PR #22.
 - Camera stop now detaches and drains the serial frame queue before removing session resources; CPU timing resets across restart. FPS and CPU calculations reject invalid intervals and have deterministic tests.
 - A manually dispatched macOS CI workflow is configured. It has not been run; GitHub-hosted macOS minutes can incur charges beyond the account allowance.
+- Phase 11/14 Issue #23 is in progress on branch `23-feat/local-release-matrix`; a local universal Release app and ZIP have been created and opened once as a smoke test. They have only an ad-hoc linker signature; Developer ID signing and notarization are not configured.
+- Current artifacts: `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01/AirControl.app` and `AirControl-local.zip`; ZIP integrity, universal x86_64/arm64 architecture, bundle identifier, and macOS 14 minimum were checked.
+- The latest complete local suite passed 50 tests, with zero SwiftLint violations and a successful Release build.
 
 ## Manual verification still required
 
@@ -22,14 +26,13 @@ Updated: 2026-11-01
 
 ## Next work
 
-1. Review CI workflow setup and usage, then complete Issue #21.
-2. Continue gesture confidence, customization, and state transition tests.
-3. Build a local unsigned app bundle and verify its contents.
-4. Do not claim manual validation without evidence.
+1. Finish Issue #23 with the QA matrix, app bundle integrity checks, and final local verification.
+2. Continue gesture confidence, customization, and state transition work if evidence identifies specific gaps.
+3. Do not claim manual validation without evidence.
 
 ## Safety notes
 
 - Camera images and typed text are not persisted or sent to a service.
 - Synthetic key events require Accessibility access and are disabled by default.
 - Secure-field prevention depends on target applications exposing their focused element subrole through Accessibility.
-- Release builds are local and unsigned unless a valid signing identity is explicitly configured.
+- Local Release builds have only the platform ad-hoc linker signature; Developer ID signing and notarization are not configured.
