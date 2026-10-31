@@ -12,6 +12,7 @@ final class CursorControlCoordinator: @unchecked Sendable {
     private var isEnabled = false
     private var lastUIUpdate = Date.distantPast
     private var gestureStatusHandler: ((ActiveGesture) -> Void)?
+    private var calibration = CursorCalibrationProfile.load()
 
     var isAccessibilityTrusted: Bool { cursorController.isAccessibilityTrusted }
     var isWindowControlAccessibilityTrusted: Bool { windowCoordinator.isAccessibilityTrusted }
@@ -78,9 +79,11 @@ final class CursorControlCoordinator: @unchecked Sendable {
         let sensitivity = settings.object(forKey: "cursorSensitivity") as? Double ?? 1
         let smoothing = settings.object(forKey: "cursorSmoothing") as? Double ?? 0.4
         let multiplier = min(max(settings.object(forKey: "pinchSensitivity") as? Double ?? 1, 0.6), 1.4)
+        let calibration = CursorCalibrationProfile.load(from: settings)
+        self.calibration = calibration
         let configuration = GestureConfiguration(
-            pinchStartThreshold: 0.32 * multiplier,
-            pinchReleaseThreshold: 0.48 * multiplier,
+            pinchStartThreshold: calibration.pinchStartThreshold * multiplier,
+            pinchReleaseThreshold: calibration.pinchReleaseThreshold * multiplier,
             dragStartDelay: settings.object(forKey: "dragStartDelay") as? Double ?? 0.45,
             scrollSensitivity: settings.object(forKey: "scrollSensitivity") as? Double ?? 1,
             reversesScrollDirection: settings.bool(forKey: "reversesScrollDirection"),
@@ -134,6 +137,8 @@ final class CursorControlCoordinator: @unchecked Sendable {
                 normalizedX: normalizedX,
                 normalizedY: normalizedY,
                 displayBounds: bounds,
+                activeArea: calibration.activeArea.cgRect,
+                mirrored: calibration.mirrorsCamera,
                 sensitivity: sensitivity
             )
             cursorController.move(to: point, alpha: 1 - smoothing)
