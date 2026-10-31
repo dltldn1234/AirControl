@@ -37,7 +37,7 @@ final class SettingsBackupTests: XCTestCase {
 
         let backup = AirControlSettingsBackup(
             doubles: ["cursorSensitivity": 100, "unknownPreference": 2],
-            booleans: ["rightClickEnabled": false, "unknownFlag": true],
+            booleans: ["rightClickEnabled": false, "showsCameraPreview": false, "unknownFlag": true],
             strings: ["airKeyboardLanguage": "invalid", "indexPinchActionMapping": "drag"],
             calibration: CursorCalibrationProfile()
         )
@@ -46,6 +46,7 @@ final class SettingsBackupTests: XCTestCase {
 
         XCTAssertEqual(defaults.double(forKey: "cursorSensitivity"), 2)
         XCTAssertFalse(defaults.bool(forKey: "rightClickEnabled"))
+        XCTAssertFalse(defaults.bool(forKey: "showsCameraPreview"))
         XCTAssertNil(defaults.object(forKey: "unknownPreference"))
         XCTAssertNil(defaults.object(forKey: "unknownFlag"))
         XCTAssertEqual(defaults.string(forKey: "airKeyboardLanguage"), AirKeyboardLanguage.english.rawValue)
