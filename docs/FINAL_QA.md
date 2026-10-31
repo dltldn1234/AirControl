@@ -23,12 +23,12 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 17 | macOS build succeeds | PASS | Tuist generation and Debug test build passed; Release build passed. |
 | 18 | Automated tests pass | PASS | Latest suite: 59 passed, 0 failed, 0 skipped. |
 | 19 | Documentation is current | PASS | README and architecture, development, gesture, calibration, testing, troubleshooting, release, keyboard, and QA docs are present. |
-| 20 | Local app bundle is ready | PASS | Universal local `.app` and ZIP were created and inspected at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01/`. Bundle contains an ad-hoc linker signature only; Developer ID signing/notarization is not included. |
+| 20 | Local app bundle is ready | PASS | Universal local `.app` and ZIP were created, inspected, and smoke-launched at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/`. Bundle contains an ad-hoc linker signature only; Developer ID signing/notarization is not included. |
 
 ## Phase status
 
 - Phase 0: PASS — repository, project, and workflow audited.
-- Phases 1–7: IMPLEMENTED IN SOURCE — build and deterministic tests pass; camera, system input, AX, IME, and multi-display interaction remain manually unverified.
+- Phases 1–7: IMPLEMENTED IN SOURCE — build and deterministic tests pass; cursor smoothing, calibration, per-pinch action mapping, conflict feedback, and safe settings export/import are included. Camera, system input, AX, IME, and multi-display interaction remain manually unverified.
 - Phase 8: PARTIAL — menu status guidance, rejected-toggle recovery, and project docs are improved. The full screen-by-screen visual/accessibility design audit is not complete.
 - Phases 9–10: PARTIAL — camera stop/frame queue cleanup, metrics guards, tests, and a manual-dispatch macOS workflow are implemented. The remote workflow has not been dispatched.
 - Phase 11: PASS FOR LOCAL PACKAGE — Release `.app` and ZIP are available; signed/notarized distribution is not prepared.
