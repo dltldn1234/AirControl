@@ -5,6 +5,7 @@ import Foundation
 final class CameraTrackingViewModel: ObservableObject {
     @Published private(set) var status = "Camera stopped"
     @Published private(set) var isStarting = false
+    @Published private(set) var isStopping = false
     @Published private(set) var isRunning = false
     @Published private(set) var joints: [HandJoint] = []
     @Published private(set) var framesPerSecond = 0.0
@@ -23,6 +24,8 @@ final class CameraTrackingViewModel: ObservableObject {
     private let calibrationManager = CalibrationManager.shared
     private var lastFrameUIUpdate = 0.0
     private var lastMetricsUIUpdate = 0.0
+    private var cameraLifecycle = CameraLifecycleGeneration()
+    private var cameraStartTask: Task<Void, Never>?
 
     init() {
         cursorCoordinator.setGestureStatusHandler { [weak self] state in
@@ -56,55 +59,86 @@ final class CameraTrackingViewModel: ObservableObject {
             }
         }
         cameraManager.onStatus = { [weak self] cameraStatus in
-            Task { @MainActor in
-                guard let self else { return }
-                switch cameraStatus {
-                case let .interrupted(message):
-                    self.status = message
-                case .resumed:
-                    self.status = self.isRunning ? "Camera resumed · looking for a hand…" : "Camera resumed."
-                case let .failed(message):
-                    self.cursorCoordinator.setCameraRunning(false)
-                    AirKeyboardCoordinator.shared.setCameraRunning(false)
-                    self.isRunning = false
-                    self.isStarting = false
-                    self.cursorControlEnabled = false
-                    UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
-                    self.status = "Camera error: \(message)"
-                }
-            }
+            Task { @MainActor in self?.handleCameraStatus(cameraStatus) }
+        }
+    }
+
+    private func handleCameraStatus(_ cameraStatus: CameraManagerStatus) {
+        switch cameraStatus {
+        case let .interrupted(message):
+            status = message
+        case .resumed:
+            status = isRunning ? "Camera resumed · looking for a hand…" : "Camera resumed."
+        case let .failed(message):
+            cursorCoordinator.setCameraRunning(false)
+            AirKeyboardCoordinator.shared.setCameraRunning(false)
+            _ = cameraLifecycle.invalidate()
+            cameraStartTask?.cancel()
+            cameraStartTask = nil
+            isRunning = false
+            isStarting = false
+            isStopping = false
+            cursorControlEnabled = false
+            UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
+            status = "Camera error: \(message)"
         }
     }
 
     func startCamera() {
-        guard !isStarting, !isRunning else { return }
+        guard !isStarting, !isRunning, !isStopping else { return }
+        let generation = cameraLifecycle.begin()
         isStarting = true
         status = "Requesting camera access…"
-        Task {
+        cameraStartTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if cameraLifecycle.isCurrent(generation) {
+                    cameraStartTask = nil
+                    isStarting = false
+                }
+            }
             do {
                 try await cameraManager.start()
+                guard cameraLifecycle.isCurrent(generation) else {
+                    await cameraManager.stop()
+                    return
+                }
                 isRunning = true
                 cursorCoordinator.setCameraRunning(true)
                 airKeyboardCoordinator.setCameraRunning(true)
                 status = "Looking for a hand…"
             } catch {
+                guard cameraLifecycle.isCurrent(generation) else {
+                    await cameraManager.stop()
+                    return
+                }
                 status = error.localizedDescription
             }
-            isStarting = false
         }
     }
 
     func stopCamera() {
-        guard isRunning || isStarting else { return }
+        guard isRunning || isStarting, !isStopping else { return }
+        let generation = cameraLifecycle.invalidate()
+        let pendingStart = cameraStartTask
+        pendingStart?.cancel()
         airKeyboardCoordinator.setCameraRunning(false)
         cursorCoordinator.setCameraRunning(false)
         cursorControlEnabled = false
         UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
         isStarting = false
         isRunning = false
+        isStopping = true
         status = "Stopping camera…"
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+            if let pendingStart {
+                await pendingStart.value
+            }
             await cameraManager.stop()
+            guard cameraLifecycle.isCurrent(generation) else { return }
+            cameraStartTask = nil
+            isStopping = false
             joints = []
             windowGestureMode = .idle
             windowTarget = "No window selected"

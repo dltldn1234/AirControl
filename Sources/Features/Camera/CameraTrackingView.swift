@@ -80,17 +80,19 @@ struct CameraTrackingView: View {
             Button {
                 if viewModel.isRunning || viewModel.isStarting {
                     viewModel.stopCamera()
-                } else {
+                } else if !viewModel.isStopping {
                     viewModel.startCamera()
                 }
             } label: {
                 Label(
-                    viewModel.isRunning || viewModel.isStarting ? "Stop Camera" : "Start Camera",
-                    systemImage: viewModel.isRunning || viewModel.isStarting ? "stop.fill" : "camera.fill"
+                    cameraButtonTitle,
+                    systemImage: viewModel.isStopping
+                        ? "hourglass"
+                        : viewModel.isRunning || viewModel.isStarting ? "stop.fill" : "camera.fill"
                 )
                 .frame(maxWidth: .infinity)
             }
-            .disabled(viewModel.isStarting)
+            .disabled(viewModel.isStarting || viewModel.isStopping)
 
             Toggle("Enable cursor control", isOn: $cursorControlEnabled)
                 .onChange(of: cursorControlEnabled) { _, enabled in
@@ -155,6 +157,11 @@ struct CameraTrackingView: View {
             return .handled
         }
         .focusable()
+    }
+
+    private var cameraButtonTitle: String {
+        if viewModel.isStopping { return "Stopping Camera…" }
+        return viewModel.isRunning || viewModel.isStarting ? "Stop Camera" : "Start Camera"
     }
 }
 

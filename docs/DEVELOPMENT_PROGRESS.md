@@ -41,6 +41,12 @@ Updated: 2026-11-01
 - The selected device applies on the next camera start; switching an active capture session is intentionally not implied.
 - Camera preference/fallback tests are included. Live device enumeration and external camera capture still require manual hardware validation.
 
+## Latest continuation: camera start/stop lifecycle
+
+- Issue #41 adds monotonically increasing camera lifecycle generations. A stop invalidates a pending start, waits for it to settle, and then tears down the capture session.
+- Camera UI now represents and disables duplicate actions while stopping; stale start completions cannot restore the running state.
+- Added deterministic generation invalidation coverage. Latest macOS arm64 suite: 65 passed, 0 failed, 0 skipped; Release build and strict SwiftLint pass. The camera permission-prompt race has not been exercised against physical AVFoundation hardware.
+
 ## Manual verification still required
 
 - Run the calibration wizard with the built-in camera and confirm cursor range and pinch thresholds feel correct.

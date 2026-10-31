@@ -21,11 +21,13 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 15 | Emergency stop works | NOT TESTED | Escape handling is implemented; no live event session was used. |
 | 16 | Settings persist | PASS | Calibration profile round-trip is unit tested; full UI settings persistence was not manually checked. |
 | 17 | macOS build succeeds | PASS | Tuist generation and Debug test build passed; Release build passed. |
-| 18 | Automated tests pass | PASS | Latest suite: 64 passed, 0 failed, 0 skipped. Includes bounded frame buffering, Korean Dubeolsik row mapping, and camera selection fallback tests; live camera enumeration/capture, latency, and Korean IME composition remain NOT TESTED. |
+| 18 | Automated tests pass | PASS | Latest suite: 65 passed, 0 failed, 0 skipped. Includes bounded frame buffering, Korean Dubeolsik mapping, camera selection fallback, and lifecycle generation tests; camera start/stop hardware races, live camera enumeration/capture, latency, and Korean IME composition remain NOT TESTED. |
 | 19 | Documentation is current | PASS | README and architecture, development, gesture, calibration, testing, troubleshooting, release, keyboard, and QA docs are present. |
 | 20 | Local app bundle is ready | PASS | Universal local `.app` and ZIP were created, inspected, and smoke-launched at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/`. Bundle contains an ad-hoc linker signature only; Developer ID signing/notarization is not included. |
 
 ## Phase status
+
+- Camera lifecycle follow-up #41: stale start completion is generation-guarded and teardown blocks duplicate starts; permission-dialog race remains NOT TESTED with physical AVFoundation capture.
 
 - Camera selection #39: built-in/external device picker and safe device fallback are implemented in source; real device enumeration and switching are NOT TESTED.
 
