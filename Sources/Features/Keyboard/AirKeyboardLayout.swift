@@ -24,17 +24,34 @@ struct AirKeyboardKey: Identifiable, Hashable {
 }
 
 enum AirKeyboardLayout {
-    static func rows(for language: AirKeyboardLanguage) -> [[AirKeyboardKey]] {
-        let digits = Array("1234567890")
-        let firstRow = Array(language == .english ? "qwertyuiop" : "ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ")
-        let secondRow = Array(language == .english ? "asdfghjkl;" : "ㅁㄴㅇㄹㅎㅗㅓㅏㅣㅔ")
-        let thirdRow = Array(language == .english ? "zxcvbnm,./" : "ㅋㅌㅊㅍㅠㅜㅡ,./")
+    static func rows(for language: AirKeyboardLanguage, shifted: Bool = false) -> [[AirKeyboardKey]] {
+        let digitLabels = Array(shifted ? "!@#$%^&*()" : "1234567890")
+        let physicalDigits = Array("1234567890")
+        let firstRow: [Character] = if language == .english {
+            Array(shifted ? "QWERTYUIOP" : "qwertyuiop")
+        } else if shifted {
+            Array("ㅃㅉㄸㄲㅆㅛㅕㅑㅒㅖ")
+        } else {
+            Array("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ")
+        }
+        let secondRow = Array(language == .english
+            ? (shifted ? "ASDFGHJKL:" : "asdfghjkl;")
+            : "ㅁㄴㅇㄹㅎㅗㅓㅏㅣㅔ")
+        let thirdRow: [Character] = if language == .english {
+            Array(shifted ? "ZXCVBNM<>?" : "zxcvbnm,./")
+        } else if shifted {
+            Array("ㅋㅌㅊㅍㅠㅜㅡ<>?")
+        } else {
+            Array("ㅋㅌㅊㅍㅠㅜㅡ,./")
+        }
         let physicalFirst = Array("qwertyuiop")
         let physicalSecond = Array("asdfghjkl;")
         let physicalThird = Array("zxcvbnm,./")
 
         return [
-            digits.map { key($0, shifted: false) } + [special("⌫", id: "backspace", action: .backspace)],
+            zip(digitLabels, physicalDigits).map { label, physical in
+                characterKey(label: label, physical: physical)
+            } + [special("⌫", id: "backspace", action: .backspace)],
             zip(firstRow, physicalFirst).map { label, physical in
                 characterKey(label: label, physical: physical)
             },
@@ -55,14 +72,6 @@ enum AirKeyboardLayout {
 
     private static func characterKey(label: Character, physical: Character) -> AirKeyboardKey {
         AirKeyboardKey(id: "key-\(physical)", label: String(label), action: .character(key: physical, shifted: false))
-    }
-
-    private static func key(_ character: Character, shifted: Bool) -> AirKeyboardKey {
-        AirKeyboardKey(
-            id: "key-\(character)-\(shifted)",
-            label: String(character),
-            action: .character(key: character, shifted: shifted)
-        )
     }
 
     private static func special(_ label: String, id: String, action: AirKeyboardAction) -> AirKeyboardKey {
