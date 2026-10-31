@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CameraTrackingView: View {
     @StateObject private var viewModel = CameraTrackingViewModel()
+    @StateObject private var airKeyboardCoordinator = AirKeyboardCoordinator.shared
     @AppStorage("cursorControlEnabled") private var cursorControlEnabled = false
     @AppStorage("showsCameraPreview") private var showsCameraPreview = true
 
@@ -95,9 +96,29 @@ struct CameraTrackingView: View {
                 .onChange(of: cursorControlEnabled) { _, enabled in
                     viewModel.setCursorControlEnabled(enabled)
                 }
-                .disabled(!viewModel.isRunning && !viewModel.cursorControlEnabled)
+                .disabled((!viewModel.isRunning && !viewModel.cursorControlEnabled) || airKeyboardCoordinator.isActive)
 
-            if viewModel.cursorControlEnabled {
+            Toggle(
+                "Enable Air Keyboard",
+                isOn: Binding(
+                    get: { airKeyboardCoordinator.isActive },
+                    set: { enabled in
+                        if enabled {
+                            airKeyboardCoordinator.activate()
+                        } else {
+                            airKeyboardCoordinator.deactivate()
+                        }
+                    }
+                )
+            )
+            .disabled(!viewModel.isRunning && !airKeyboardCoordinator.isActive)
+
+            Text(airKeyboardCoordinator.statusMessage)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
+            if viewModel.cursorControlEnabled || airKeyboardCoordinator.isActive {
                 Button("Emergency Stop · Esc") {
                     viewModel.emergencyStop()
                     cursorControlEnabled = false

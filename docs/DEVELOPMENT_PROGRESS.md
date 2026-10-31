@@ -23,3 +23,10 @@ Updated: 2026-11-01
 3. Complete UI/UX and workflow documentation.
 4. Run Debug and Release builds, tests, and lint before PR updates.
 5. Do not merge a PR while required CI checks fail or claim manual validation without evidence.
+
+## Safety notes
+
+- Camera images and typed text are not persisted or sent to a service.
+- Synthetic key events require Accessibility access and are disabled by default.
+- Secure-field prevention depends on target applications exposing their focused element subrole through Accessibility.
+- Release builds are local and unsigned unless a valid signing identity is explicitly configured.

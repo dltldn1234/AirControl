@@ -24,8 +24,14 @@ struct SettingsView: View {
     @AppStorage("windowGestureMode") private var windowGestureMode = WindowGestureMode.idle.rawValue
     @AppStorage("windowControlTarget") private var windowControlTarget = "No window selected"
     @AppStorage("windowControlStatus") private var windowControlStatus = ""
+    @AppStorage("airKeyboardScale") private var airKeyboardScale = 1.0
+    @AppStorage("airKeyboardOpacity") private var airKeyboardOpacity = 0.94
+    @AppStorage("airKeyboardSensitivity") private var airKeyboardSensitivity = 1.0
+    @AppStorage("airKeyboardLanguage") private var airKeyboardLanguage = AirKeyboardLanguage.english.rawValue
+    @AppStorage("airKeyboardFeedback") private var airKeyboardFeedback = true
     @State private var accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
     @State private var statusMessage = ""
+    @StateObject private var airKeyboardCoordinator = AirKeyboardCoordinator.shared
     @StateObject private var calibrationManager = CalibrationManager.shared
 
     var body: some View {
@@ -189,11 +195,73 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Section("Air Keyboard") {
+                Toggle(
+                    "Enable Air Keyboard mode",
+                    isOn: Binding(
+                        get: { airKeyboardCoordinator.isActive },
+                        set: { enabled in
+                            if enabled {
+                                airKeyboardCoordinator.activate()
+                            } else {
+                                airKeyboardCoordinator.deactivate()
+                            }
+                        }
+                    )
+                )
+                .disabled(!airKeyboardCoordinator.canActivate && !airKeyboardCoordinator.isActive)
+
+                Picker("Layout", selection: $airKeyboardLanguage) {
+                    ForEach(AirKeyboardLanguage.allCases) { language in
+                        Text(language.rawValue).tag(language.rawValue)
+                    }
+                }
+                .onChange(of: airKeyboardLanguage) { _, _ in applyAirKeyboardSettings() }
+
+                Slider(value: $airKeyboardScale, in: 0.75...1.35, step: 0.05) {
+                    Text("Keyboard size")
+                }
+                .onChange(of: airKeyboardScale) { _, _ in applyAirKeyboardSettings() }
+
+                Slider(value: $airKeyboardOpacity, in: 0.5...1, step: 0.05) {
+                    Text("Keyboard opacity")
+                }
+                .onChange(of: airKeyboardOpacity) { _, _ in applyAirKeyboardSettings() }
+
+                Slider(value: $airKeyboardSensitivity, in: 0.6...1.6, step: 0.05) {
+                    Text("Key selection sensitivity")
+                }
+                .onChange(of: airKeyboardSensitivity) { _, _ in applyAirKeyboardSettings() }
+
+                Toggle("Show key input feedback", isOn: $airKeyboardFeedback)
+
+                HStack {
+                    Text(airKeyboardCoordinator.statusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Reset Keyboard Position") {
+                        airKeyboardCoordinator.resetKeyboardPosition()
+                    }
+                }
+            }
         }
         .padding()
         .frame(minWidth: 520, minHeight: 420)
         .onAppear {
             accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
+            applyAirKeyboardSettings()
         }
+    }
+
+    private func applyAirKeyboardSettings() {
+        let language = AirKeyboardLanguage(rawValue: airKeyboardLanguage) ?? .english
+        airKeyboardCoordinator.updateSettings(
+            scale: airKeyboardScale,
+            opacity: airKeyboardOpacity,
+            sensitivity: airKeyboardSensitivity,
+            language: language
+        )
     }
 }

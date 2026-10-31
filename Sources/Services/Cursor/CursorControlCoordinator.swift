@@ -1,6 +1,12 @@
 import CoreGraphics
 import Foundation
 
+enum CursorGestureInputGate {
+    static func allowsInput(cameraIsRunning: Bool, airKeyboardIsActive: Bool) -> Bool {
+        cameraIsRunning && !airKeyboardIsActive
+    }
+}
+
 final class CursorControlCoordinator: @unchecked Sendable {
     static let shared = CursorControlCoordinator()
 
@@ -10,6 +16,7 @@ final class CursorControlCoordinator: @unchecked Sendable {
     private var gestureRecognizer = GestureRecognizer()
     private var cameraIsRunning = false
     private var isEnabled = false
+    private var isAirKeyboardActive = false
     private var lastUIUpdate = Date.distantPast
     private var gestureStatusHandler: ((ActiveGesture) -> Void)?
     private var calibration = CursorCalibrationProfile.load()
@@ -58,13 +65,32 @@ final class CursorControlCoordinator: @unchecked Sendable {
         }
     }
 
+    func setAirKeyboardActive(_ active: Bool) {
+        processingQueue.sync {
+            guard isAirKeyboardActive != active else { return }
+            isAirKeyboardActive = active
+            if active {
+                let actions = gestureRecognizer.resetForTrackingLoss()
+                if actions.contains(.endDrag) { cursorController.endDrag() }
+                windowCoordinator.stop(message: "Air Keyboard active; cursor and window gestures are paused.")
+            } else {
+                gestureRecognizer = GestureRecognizer()
+                windowCoordinator.stop(message: "Air Keyboard inactive; gesture controls are available.")
+            }
+        }
+    }
+
     func processFrame(_ joints: [HandJoint]) {
         processFrame([joints])
     }
 
     func processFrame(_ hands: [[HandJoint]]) {
         processingQueue.async { [weak self] in
-            guard let self, cameraIsRunning else { return }
+            guard let self,
+                  CursorGestureInputGate.allowsInput(
+                    cameraIsRunning: cameraIsRunning,
+                    airKeyboardIsActive: isAirKeyboardActive
+                  ) else { return }
             let suppressCursor = windowCoordinator.processFrame(
                 hands,
                 timestamp: ProcessInfo.processInfo.systemUptime
