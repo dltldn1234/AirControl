@@ -37,6 +37,21 @@ final class CameraMetricsTests: XCTestCase {
         XCTAssertNil(CameraDeviceSelection.resolve(preferredID: nil, availableIDs: [], frontCameraID: nil))
     }
 
+    func testCameraLifecycleInvalidatesStaleStartAndIssuesNewGeneration() {
+        var lifecycle = CameraLifecycleGeneration()
+
+        let firstStart = lifecycle.begin()
+        XCTAssertTrue(lifecycle.isCurrent(firstStart))
+
+        let stop = lifecycle.invalidate()
+        XCTAssertFalse(lifecycle.isCurrent(firstStart))
+        XCTAssertTrue(lifecycle.isCurrent(stop))
+
+        let secondStart = lifecycle.begin()
+        XCTAssertFalse(lifecycle.isCurrent(stop))
+        XCTAssertTrue(lifecycle.isCurrent(secondStart))
+    }
+
     func testCameraInterruptionReasonMapsToActionableStatus() {
         XCTAssertEqual(
             CameraManagerStatus.interruptionMessage,
