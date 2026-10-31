@@ -13,6 +13,34 @@ struct GestureRecognizerTests {
     }
 
     @Test
+    func cursorMovementUsesConfidentIndexFingertip() {
+        var recognizer = GestureRecognizer()
+        let actions = recognizer.process(joints: hand(pinchDistance: 0.08), timestamp: 1)
+
+        #expect(actions.contains(.move(normalizedX: 0.5, normalizedY: 0.6)))
+    }
+
+    @Test
+    func lowConfidenceIndexTipPreventsCursorMovement() {
+        var recognizer = GestureRecognizer()
+        let joints = hand(pinchDistance: 0.08).map { joint in
+            joint.name == "indexTip"
+                ? HandJoint(
+                    name: joint.name,
+                    normalizedX: joint.normalizedX,
+                    normalizedY: joint.normalizedY,
+                    confidence: 0.4
+                )
+                : joint
+        }
+
+        let actions = recognizer.process(joints: joints, timestamp: 1)
+
+        #expect(actions.isEmpty)
+        #expect(recognizer.activeGesture == .trackingLost)
+    }
+
+    @Test
     func heldPinchStartsDragAndTrackingLossReleasesIt() {
         var recognizer = GestureRecognizer()
         _ = recognizer.process(joints: hand(pinchDistance: 0.02), timestamp: 1)
