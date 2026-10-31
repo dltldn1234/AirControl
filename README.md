@@ -26,13 +26,16 @@ swiftlint lint --strict
 Sources/
 ├── App/                 # SwiftUI app entry and AppKit lifecycle adapter
 ├── Features/
+│   ├── Keyboard/        # Floating keyboard UI, state, and AppKit panel
 │   ├── MenuBar/         # Menu bar experience and presentation state
-│   └── Settings/        # Permission and status presentation
+│   └── Settings/        # Permission and gesture settings
 └── Services/
     ├── Camera/          # AVFoundation capture
     ├── HandPose/        # Vision hand-joint detection
     ├── Gesture/         # Pinch and drag state machine
-    └── Cursor/          # Mapping, smoothing, and CGEvent control
+    ├── Keyboard/        # Key events, coordinate mapping, and pinch selection
+    ├── Cursor/          # Mapping, smoothing, and CGEvent control
+    └── Window/          # Accessibility-backed window and app controls
 Tests/                   # Unit tests
 ```
 
@@ -51,3 +54,7 @@ Cursor input is never emitted unless the camera is running, the user has enabled
 The tracking panel reports the current gesture, processed Vision FPS, inference latency, and estimated app CPU usage. Rendering updates are throttled separately from camera-frame inference.
 
 Window and app controls are opt-in in Settings and require Accessibility permission. Hold an open palm to enter window mode, pinch and move to reposition the focused window, use two open hands to resize, and hold a fist to exit. A three-finger horizontal swipe switches among visible regular applications. Some apps do not expose writable AX window attributes; AirControl skips those windows. macOS Spaces and full-screen desktop navigation are not controlled.
+
+## Air Keyboard
+
+Air Keyboard is an optional non-activating floating panel controlled by the Vision index fingertip and thumb-index pinch. It supports English QWERTY and Korean Dubeolsik labels, basic editing keys, and settings for size, opacity, sensitivity, and feedback. It pauses cursor and window gestures while active and requires Accessibility access. Korean IME composition and focus retention vary by target app and must be checked manually. See [Air Keyboard documentation](docs/AIR_KEYBOARD.md).
