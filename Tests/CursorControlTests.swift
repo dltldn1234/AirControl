@@ -1,5 +1,6 @@
 import CoreGraphics
 import Testing
+
 @testable import AirControl
 
 struct CursorControlTests {
@@ -119,5 +120,29 @@ struct CursorControlTests {
 
         #expect(displays.contains { $0.contains(point) })
         #expect(point.x == 1)
+    }
+}
+
+extension CursorControlTests {
+    @Test
+    func latestFrameBufferCoalescesPendingFramesAndCanBeScheduledAgain() {
+        let buffer = LatestFrameBuffer<Int>()
+
+        #expect(buffer.offer(1))
+        #expect(!buffer.offer(2))
+        #expect(!buffer.offer(3))
+        #expect(buffer.take() == 3)
+        #expect(buffer.take() == nil)
+        #expect(buffer.offer(4))
+        #expect(buffer.take() == 4)
+    }
+
+    @Test
+    func latestFrameBufferPreservesEmptyFramesAsTrackingLoss() {
+        let buffer = LatestFrameBuffer<[[HandJoint]]>()
+
+        #expect(buffer.offer([[HandJoint(name: "indexTip", normalizedX: 0.5, normalizedY: 0.5, confidence: 1)]]))
+        #expect(!buffer.offer([]))
+        #expect(buffer.take()?.isEmpty == true)
     }
 }

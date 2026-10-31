@@ -22,6 +22,13 @@ Updated: 2026-11-01
 - Imported settings validate value ranges and string enums and force cursor, keyboard, window, and app-switch controls off.
 - The latest local suite passed 59 tests, with zero SwiftLint violations. Tuist generation, Debug build, Release build, ZIP integrity, and launching/quitting the menu bar app all passed.
 
+## Latest continuation: bounded frame processing
+
+- Issue #35 coalesces cursor/window processing input to the newest pending camera frame. This bounds queued work to one pending frame while keeping gesture state serialized on the existing processing queue.
+- Empty frames are retained when they replace an older pending frame, so tracking-loss handling is not hidden by the coalescer.
+- Added tests for newest-frame selection, scheduler re-arming, and empty-frame retention. Latest macOS arm64 suite: 62 passed, 0 failed, 0 skipped; Debug build and strict SwiftLint pass.
+- Live latency/CPU comparison requires camera use and remains unmeasured. No performance improvement percentage is claimed.
+
 ## Manual verification still required
 
 - Run the calibration wizard with the built-in camera and confirm cursor range and pinch thresholds feel correct.

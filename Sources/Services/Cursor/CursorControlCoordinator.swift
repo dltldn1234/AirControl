@@ -10,7 +10,9 @@ enum CursorGestureInputGate {
 final class CursorControlCoordinator: @unchecked Sendable {
     static let shared = CursorControlCoordinator()
 
-    private let processingQueue = DispatchQueue(label: "aircontrol.cursor.processing", qos: .userInteractive)
+    private let processingQueue = DispatchQueue(
+        label: "aircontrol.cursor.processing", qos: .userInteractive)
+    private let pendingFrames = LatestFrameBuffer<[[HandJoint]]>()
     private let cursorController = CursorController()
     private let windowCoordinator = WindowControlCoordinator()
     private var gestureRecognizer = GestureRecognizer()
@@ -72,10 +74,12 @@ final class CursorControlCoordinator: @unchecked Sendable {
             if active {
                 let actions = gestureRecognizer.resetForTrackingLoss()
                 if actions.contains(.endDrag) { cursorController.endDrag() }
-                windowCoordinator.stop(message: "Air Keyboard active; cursor and window gestures are paused.")
+                windowCoordinator.stop(
+                    message: "Air Keyboard active; cursor and window gestures are paused.")
             } else {
                 gestureRecognizer = GestureRecognizer()
-                windowCoordinator.stop(message: "Air Keyboard inactive; gesture controls are available.")
+                windowCoordinator.stop(
+                    message: "Air Keyboard inactive; gesture controls are available.")
             }
         }
     }
@@ -85,26 +89,32 @@ final class CursorControlCoordinator: @unchecked Sendable {
     }
 
     func processFrame(_ hands: [[HandJoint]]) {
-        processingQueue.async { [weak self] in
-            guard let self,
-                  CursorGestureInputGate.allowsInput(
+        guard pendingFrames.offer(hands) else { return }
+        processingQueue.async { [weak self] in self?.drainPendingFrames() }
+    }
+
+    private func drainPendingFrames() {
+        while let hands = pendingFrames.take() {
+            guard
+                CursorGestureInputGate.allowsInput(
                     cameraIsRunning: cameraIsRunning,
                     airKeyboardIsActive: isAirKeyboardActive
-                  ) else { return }
+                )
+            else { continue }
             let suppressCursor = windowCoordinator.processFrame(
                 hands,
                 timestamp: ProcessInfo.processInfo.systemUptime
             )
-            guard !suppressCursor, isEnabled, let joints = hands.first else { return }
-            let settings = UserDefaults.standard
-            processCursorFrame(joints, settings: settings)
+            guard !suppressCursor, isEnabled, let joints = hands.first else { continue }
+            processCursorFrame(joints, settings: .standard)
         }
     }
 
     private func processCursorFrame(_ joints: [HandJoint], settings: UserDefaults) {
         let sensitivity = settings.object(forKey: "cursorSensitivity") as? Double ?? 1
         let smoothing = settings.object(forKey: "cursorSmoothing") as? Double ?? 0.4
-        let multiplier = min(max(settings.object(forKey: "pinchSensitivity") as? Double ?? 1, 0.6), 1.4)
+        let multiplier = min(
+            max(settings.object(forKey: "pinchSensitivity") as? Double ?? 1, 0.6), 1.4)
         let calibration = CursorCalibrationProfile.load(from: settings)
         self.calibration = calibration
         let configuration = GestureConfiguration(
@@ -114,17 +124,20 @@ final class CursorControlCoordinator: @unchecked Sendable {
             scrollSensitivity: settings.object(forKey: "scrollSensitivity") as? Double ?? 1,
             reversesScrollDirection: settings.bool(forKey: "reversesScrollDirection"),
             rightClickEnabled: settings.object(forKey: "rightClickEnabled") as? Bool ?? true,
-            rightClickGestureEnabled: settings.object(forKey: "rightClickGestureEnabled") as? Bool ?? true,
+            rightClickGestureEnabled: settings.object(forKey: "rightClickGestureEnabled") as? Bool
+                ?? true,
             cursorEnabled: settings.object(forKey: "gestureCursorEnabled") as? Bool ?? true,
             leftClickEnabled: settings.object(forKey: "leftClickEnabled") as? Bool ?? true,
             dragEnabled: settings.object(forKey: "dragEnabled") as? Bool ?? true,
             scrollEnabled: settings.object(forKey: "scrollEnabled") as? Bool ?? true,
             scrollGestureEnabled: settings.object(forKey: "scrollGestureEnabled") as? Bool ?? true,
             indexPinchMapping: PinchActionMapping(
-                rawValue: settings.string(forKey: "indexPinchActionMapping") ?? PinchActionMapping.leftClick.rawValue
+                rawValue: settings.string(forKey: "indexPinchActionMapping")
+                    ?? PinchActionMapping.leftClick.rawValue
             ) ?? .leftClick,
             middlePinchMapping: PinchActionMapping(
-                rawValue: settings.string(forKey: "middlePinchActionMapping") ?? PinchActionMapping.rightClick.rawValue
+                rawValue: settings.string(forKey: "middlePinchActionMapping")
+                    ?? PinchActionMapping.rightClick.rawValue
             ) ?? .rightClick
         )
         let actions = gestureRecognizer.process(
@@ -161,7 +174,7 @@ final class CursorControlCoordinator: @unchecked Sendable {
 
     private func handle(_ action: GestureAction, sensitivity: Double, smoothing: Double) {
         switch action {
-        case let .move(normalizedX, normalizedY):
+        case .move(let normalizedX, let normalizedY):
             let bounds = DisplayCoordinateMapper.virtualBounds(
                 for: DisplayCoordinateMapper.activeDisplayBounds()
             )
@@ -182,7 +195,7 @@ final class CursorControlCoordinator: @unchecked Sendable {
             cursorController.endDrag()
         case .rightClick:
             cursorController.rightClick()
-        case let .scroll(delta):
+        case .scroll(let delta):
             cursorController.scroll(delta: delta * 1_800)
         }
     }
