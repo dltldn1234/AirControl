@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
 
+private final class NonActivatingKeyboardPanel: NSPanel {
+    override var canBecomeKey: Bool { false }
+    override var canBecomeMain: Bool { false }
+}
+
 @MainActor
 final class FloatingKeyboardWindow {
     private var panel: NSPanel?
@@ -82,7 +87,7 @@ final class FloatingKeyboardWindow {
     }
 
     private func createPanel(coordinator: AirKeyboardCoordinator) {
-        let panel = NSPanel(
+        let panel = NonActivatingKeyboardPanel(
             contentRect: NSRect(x: 0, y: 0, width: 760, height: 290),
             styleMask: [.borderless, .nonactivatingPanel, .resizable],
             backing: .buffered,
