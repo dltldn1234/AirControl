@@ -94,7 +94,10 @@ struct CameraTrackingView: View {
 
             Toggle("Enable cursor control", isOn: $cursorControlEnabled)
                 .onChange(of: cursorControlEnabled) { _, enabled in
-                    viewModel.setCursorControlEnabled(enabled)
+                    guard viewModel.setCursorControlEnabled(enabled) else {
+                        cursorControlEnabled = false
+                        return
+                    }
                 }
                 .disabled((!viewModel.isRunning && !viewModel.cursorControlEnabled) || airKeyboardCoordinator.isActive)
 

@@ -96,16 +96,18 @@ final class CameraTrackingViewModel: ObservableObject {
         }
     }
 
-    func setCursorControlEnabled(_ enabled: Bool) {
+    @discardableResult
+    func setCursorControlEnabled(_ enabled: Bool) -> Bool {
         guard !enabled || isRunning else {
             status = "Start the camera before enabling cursor control."
-            return
+            return false
         }
         if cursorCoordinator.setEnabled(enabled) {
             cursorControlEnabled = enabled
             UserDefaults.standard.set(enabled, forKey: "cursorControlEnabled")
             accessibilityAuthorized = cursorCoordinator.isAccessibilityTrusted
             status = enabled ? "Cursor control active · Esc to stop" : "Cursor control stopped"
+            return true
         } else {
             cursorControlEnabled = false
             gestureStatus = .trackingLost
@@ -114,6 +116,7 @@ final class CameraTrackingViewModel: ObservableObject {
             status = accessibilityAuthorized
                 ? "Start the camera before enabling cursor control."
                 : "Allow AirControl in System Settings → Privacy & Security → Accessibility."
+            return false
         }
     }
 
