@@ -26,3 +26,7 @@ Create an Issue before implementation. Branch names use `<issue>-<type>/<work>`.
 ## Validation limits
 
 Unit tests cover deterministic logic. They do not grant camera or Accessibility permission and do not prove input behavior in third-party apps. Record physical-camera, Korean IME, multi-monitor, window-control, and secure-field checks separately.
+
+## GitHub Actions
+
+`.github/workflows/macos.yml` provides the same generation, lint, test, and Release build checks as a manually dispatched workflow. It intentionally has no automatic push or pull-request trigger. Dispatching GitHub-hosted macOS workflows may consume included Actions minutes and can incur charges after the included allowance, so review the repository/account billing allowance before running it.
