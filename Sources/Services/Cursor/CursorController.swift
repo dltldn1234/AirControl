@@ -12,6 +12,20 @@ enum MouseClickSequence {
     static let doubleClickStates: [Int64] = [1, 2]
 }
 
+enum MouseClickEventPair {
+    @discardableResult
+    static func post(
+        down: CGEvent?,
+        upEvent: CGEvent?,
+        using postEvent: (CGEvent) -> Void
+    ) -> Bool {
+        guard let down, let upEvent else { return false }
+        postEvent(down)
+        postEvent(upEvent)
+        return true
+    }
+}
+
 final class CursorController {
     private let eventQueue = DispatchQueue(label: "aircontrol.cursor.events", qos: .userInteractive)
     private var smoother = OneEuroCursorFilter()
@@ -111,8 +125,12 @@ final class CursorController {
         eventQueue.async { [weak self] in
             guard let self, isEnabled, !isDragging, isAccessibilityTrusted,
                   let location = CGEvent(source: nil)?.location else { return }
-            _ = postMouseEvent(.rightMouseDown, at: location, button: .right)
-            _ = postMouseEvent(.rightMouseUp, at: location, button: .right)
+            _ = postMouseClick(
+                downType: .rightMouseDown,
+                upType: .rightMouseUp,
+                at: location,
+                button: .right
+            )
         }
     }
 
@@ -121,8 +139,7 @@ final class CursorController {
         eventQueue.async { [weak self] in
             guard let self, isEnabled, !isDragging, isAccessibilityTrusted,
                   let location = CGEvent(source: nil)?.location else { return }
-            guard postMouseEvent(.leftMouseDown, at: location) else { return }
-            _ = postMouseEvent(.leftMouseUp, at: location)
+            _ = postMouseClick(downType: .leftMouseDown, upType: .leftMouseUp, at: location)
         }
     }
 
@@ -132,8 +149,12 @@ final class CursorController {
             guard let self, isEnabled, !isDragging, isAccessibilityTrusted,
                   let location = CGEvent(source: nil)?.location else { return }
             for clickState in MouseClickSequence.doubleClickStates {
-                guard postMouseEvent(.leftMouseDown, at: location, clickState: clickState),
-                      postMouseEvent(.leftMouseUp, at: location, clickState: clickState) else { return }
+                guard postMouseClick(
+                    downType: .leftMouseDown,
+                    upType: .leftMouseUp,
+                    at: location,
+                    clickState: clickState
+                ) else { return }
             }
         }
     }
@@ -147,19 +168,43 @@ final class CursorController {
     }
 
     @discardableResult
-    private func postMouseEvent(
-        _ type: CGEventType,
+    private func postMouseClick(
+        downType: CGEventType,
+        upType: CGEventType,
         at point: CGPoint,
         button: CGMouseButton = .left,
         clickState: Int64 = 1
     ) -> Bool {
+        let downEvent = makeMouseEvent(downType, at: point, button: button, clickState: clickState)
+        let upEvent = makeMouseEvent(upType, at: point, button: button, clickState: clickState)
+        return MouseClickEventPair.post(down: downEvent, upEvent: upEvent) {
+            $0.post(tap: .cghidEventTap)
+        }
+    }
+
+    private func makeMouseEvent(
+        _ type: CGEventType,
+        at point: CGPoint,
+        button: CGMouseButton = .left,
+        clickState: Int64 = 1
+    ) -> CGEvent? {
         guard let event = CGEvent(
             mouseEventSource: nil,
             mouseType: type,
             mouseCursorPosition: point,
             mouseButton: button
-        ) else { return false }
+        ) else { return nil }
         event.setIntegerValueField(.mouseEventClickState, value: clickState)
+        return event
+    }
+
+    @discardableResult
+    private func postMouseEvent(
+        _ type: CGEventType,
+        at point: CGPoint,
+        button: CGMouseButton = .left
+    ) -> Bool {
+        guard let event = makeMouseEvent(type, at: point, button: button) else { return false }
         event.post(tap: .cghidEventTap)
         return true
     }
