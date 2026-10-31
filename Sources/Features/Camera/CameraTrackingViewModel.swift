@@ -19,6 +19,7 @@ final class CameraTrackingViewModel: ObservableObject {
 
     let cameraManager = CameraManager()
     private let cursorCoordinator = CursorControlCoordinator.shared
+    private let calibrationManager = CalibrationManager.shared
     private var lastFrameUIUpdate = 0.0
     private var lastMetricsUIUpdate = 0.0
 
@@ -34,6 +35,7 @@ final class CameraTrackingViewModel: ObservableObject {
         cameraManager.onFrame = { [weak self] hands, fps in
             self?.cursorCoordinator.processFrame(hands)
             Task { @MainActor in
+                self?.calibrationManager.observe(hands)
                 let now = ProcessInfo.processInfo.systemUptime
                 guard now - (self?.lastFrameUIUpdate ?? 0) >= 1.0 / 20 else { return }
                 self?.lastFrameUIUpdate = now
