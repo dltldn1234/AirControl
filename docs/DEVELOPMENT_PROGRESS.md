@@ -62,6 +62,12 @@ Updated: 2026-11-01
 - Added a test proving an incomplete event pair posts nothing and a complete pair posts both events. The test validates planning only and never posts system input.
 - macOS arm64 suite: 68 passed, 0 failed, 0 skipped; Release build passed; strict SwiftLint reported 0 violations in 43 files.
 
+## YOLO model decision
+
+- Issue #13 remains unimplemented: repository inspection found no model artifact, and the standard Ultralytics COCO pose schema does not contain finger landmarks.
+- `docs/YOLO_EVALUATION.md` records the model-fit and licensing evidence plus integration criteria. No model was added because the published Ultralytics terms impose AGPL obligations or require a paid Enterprise license, and the hand training dataset is marked non-commercial/share-alike.
+- Integrate only after selecting a compatible model and confirming the project's licensing/distribution path. Vision remains the current detector.
+
 ## Manual verification still required
 
 - Run the calibration wizard with the built-in camera and confirm cursor range and pinch thresholds feel correct.
