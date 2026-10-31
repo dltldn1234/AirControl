@@ -189,6 +189,8 @@ final class CursorControlCoordinator: @unchecked Sendable {
             cursorController.move(to: point, alpha: 1 - smoothing)
         case .click:
             cursorController.click()
+        case .doubleClick:
+            cursorController.doubleClick()
         case .beginDrag:
             cursorController.beginDrag()
         case .endDrag:

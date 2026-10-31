@@ -8,6 +8,10 @@ struct CursorPermissionGate {
     }
 }
 
+enum MouseClickSequence {
+    static let doubleClickStates: [Int64] = [1, 2]
+}
+
 final class CursorController {
     private let eventQueue = DispatchQueue(label: "aircontrol.cursor.events", qos: .userInteractive)
     private var smoother = OneEuroCursorFilter()
@@ -122,6 +126,18 @@ final class CursorController {
         }
     }
 
+    func doubleClick() {
+        guard isAccessibilityTrusted else { return }
+        eventQueue.async { [weak self] in
+            guard let self, isEnabled, !isDragging, isAccessibilityTrusted,
+                  let location = CGEvent(source: nil)?.location else { return }
+            for clickState in MouseClickSequence.doubleClickStates {
+                guard postMouseEvent(.leftMouseDown, at: location, clickState: clickState),
+                      postMouseEvent(.leftMouseUp, at: location, clickState: clickState) else { return }
+            }
+        }
+    }
+
     func stop() {
         eventQueue.sync {
             isEnabled = false
@@ -134,7 +150,8 @@ final class CursorController {
     private func postMouseEvent(
         _ type: CGEventType,
         at point: CGPoint,
-        button: CGMouseButton = .left
+        button: CGMouseButton = .left,
+        clickState: Int64 = 1
     ) -> Bool {
         guard let event = CGEvent(
             mouseEventSource: nil,
@@ -142,6 +159,7 @@ final class CursorController {
             mouseCursorPosition: point,
             mouseButton: button
         ) else { return false }
+        event.setIntegerValueField(.mouseEventClickState, value: clickState)
         event.post(tap: .cghidEventTap)
         return true
     }

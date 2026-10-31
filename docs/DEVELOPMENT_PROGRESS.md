@@ -47,6 +47,14 @@ Updated: 2026-11-01
 - Camera UI now represents and disables duplicate actions while stopping; stale start completions cannot restore the running state.
 - Added deterministic generation invalidation coverage. Latest macOS arm64 suite: 65 passed, 0 failed, 0 skipped; Release build and strict SwiftLint pass. The camera permission-prompt race has not been exercised against physical AVFoundation hardware.
 
+## Latest continuation: configurable double click
+
+- Issue #43 adds `Double click` to both pinch action pickers and preserves it through settings export/import validation.
+- A short pinch emits one double-click action after release. Click and double-click share a cooldown to prevent repeated activation; long holds do not turn the double-click mapping into a drag.
+- The cursor event queue posts two left-button down/up pairs with click states 1 and 2, only while control is enabled and Accessibility is trusted.
+- Added recognition cooldown, click-state sequence, and settings round-trip coverage. macOS arm64 suite: 67 passed, 0 failed, 0 skipped; Release build passed; strict SwiftLint reported 0 violations in 43 files.
+- Actual system double-click delivery through Accessibility and a hand gesture remains NOT TESTED.
+
 ## Manual verification still required
 
 - Run the calibration wizard with the built-in camera and confirm cursor range and pinch thresholds feel correct.

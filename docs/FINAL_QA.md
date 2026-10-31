@@ -8,7 +8,7 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 2 | Camera connects | NOT TESTED | No camera capture session was exercised during this packaging pass. |
 | 3 | Hand joints are detected | NOT TESTED | Vision code builds; no live hand input was observed. |
 | 4 | Real cursor moves | NOT TESTED | CoreGraphics path is covered by logic/build checks, not a live permissioned session. |
-| 5 | Left/right click works | NOT TESTED | Requires Accessibility permission and physical gesture validation. |
+| 5 | Left/right/double click works | NOT TESTED | Recognition and click-state sequence are unit tested; live system events require Accessibility permission and physical gesture validation. |
 | 6 | Drag works | NOT TESTED | State-machine release tests exist; live system drag was not performed. |
 | 7 | Scroll works | NOT TESTED | Scroll direction/state logic has unit coverage; live app scrolling was not performed. |
 | 8 | Window move and resize work | NOT TESTED | AX geometry/state tests exist; target-app behavior was not performed. |
@@ -21,7 +21,7 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 15 | Emergency stop works | NOT TESTED | Escape handling is implemented; no live event session was used. |
 | 16 | Settings persist | PASS | Calibration profile round-trip is unit tested; full UI settings persistence was not manually checked. |
 | 17 | macOS build succeeds | PASS | Tuist generation and Debug test build passed; Release build passed. |
-| 18 | Automated tests pass | PASS | Latest suite: 65 passed, 0 failed, 0 skipped. Includes bounded frame buffering, Korean Dubeolsik mapping, camera selection fallback, and lifecycle generation tests; camera start/stop hardware races, live camera enumeration/capture, latency, and Korean IME composition remain NOT TESTED. |
+| 18 | Automated tests pass | PASS | Latest suite: 67 passed, 0 failed, 0 skipped. Includes double-click action/cooldown/event-state sequence, bounded frame buffering, Korean Dubeolsik mapping, camera selection fallback, and lifecycle generation tests; camera start/stop hardware races, live camera enumeration/capture, latency, and Korean IME composition remain NOT TESTED. |
 | 19 | Documentation is current | PASS | README and architecture, development, gesture, calibration, testing, troubleshooting, release, keyboard, and QA docs are present. |
 | 20 | Local app bundle is ready | PASS | Universal local `.app` and ZIP were created, inspected, and smoke-launched at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/`. Bundle contains an ad-hoc linker signature only; Developer ID signing/notarization is not included. |
 
@@ -30,6 +30,7 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 - Camera lifecycle follow-up #41: stale start completion is generation-guarded and teardown blocks duplicate starts; permission-dialog race remains NOT TESTED with physical AVFoundation capture.
 
 - Camera selection #39: built-in/external device picker and safe device fallback are implemented in source; real device enumeration and switching are NOT TESTED.
+- Configurable double-click #43: pinch mapping and CoreGraphics click-state sequence have unit/build coverage; live Accessibility event delivery is NOT TESTED.
 
 - Performance follow-up #35: bounded latest-frame queue is covered by unit tests; before/after camera latency and CPU comparison remains NOT TESTED.
 

@@ -3,6 +3,7 @@ import Foundation
 enum GestureAction: Equatable {
     case move(normalizedX: Double, normalizedY: Double)
     case click
+    case doubleClick
     case rightClick
     case beginDrag
     case endDrag
@@ -20,6 +21,7 @@ enum ActiveGesture: String, Equatable {
 
 enum PinchActionMapping: String, CaseIterable, Identifiable {
     case leftClick
+    case doubleClick
     case rightClick
     case drag
     case disabled
@@ -29,6 +31,7 @@ enum PinchActionMapping: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .leftClick: "Left click"
+        case .doubleClick: "Double click"
         case .rightClick: "Right click"
         case .drag: "Drag"
         case .disabled: "Disabled"
@@ -240,10 +243,13 @@ struct GestureRecognizer {
         case .leftClick where configuration.leftClickEnabled && timestamp - lastClickAt >= 0.25:
             lastClickAt = timestamp
             return [.click]
+        case .doubleClick where configuration.leftClickEnabled && timestamp - lastClickAt >= 0.4:
+            lastClickAt = timestamp
+            return [.doubleClick]
         case .rightClick where configuration.rightClickEnabled && timestamp - lastRightClickAt >= 0.35:
             lastRightClickAt = timestamp
             return [.rightClick]
-        case .leftClick, .rightClick, .drag, .disabled:
+        case .leftClick, .doubleClick, .rightClick, .drag, .disabled:
             break
         }
         return []

@@ -13,6 +13,41 @@ struct GestureRecognizerTests {
     }
 
     @Test
+    func mappedShortPinchCreatesOneDoubleClickAfterCooldown() {
+        var recognizer = GestureRecognizer()
+        var configuration = GestureConfiguration()
+        configuration.indexPinchMapping = .doubleClick
+
+        _ = recognizer.process(joints: hand(pinchDistance: 0.02), timestamp: 1, configuration: configuration)
+        let firstRelease = recognizer.process(
+            joints: hand(pinchDistance: 0.08),
+            timestamp: 1.1,
+            configuration: configuration
+        )
+        _ = recognizer.process(joints: hand(pinchDistance: 0.02), timestamp: 1.2, configuration: configuration)
+        let cooldownRelease = recognizer.process(
+            joints: hand(pinchDistance: 0.08),
+            timestamp: 1.3,
+            configuration: configuration
+        )
+        _ = recognizer.process(joints: hand(pinchDistance: 0.02), timestamp: 1.6, configuration: configuration)
+        let laterRelease = recognizer.process(
+            joints: hand(pinchDistance: 0.08),
+            timestamp: 1.7,
+            configuration: configuration
+        )
+
+        #expect(firstRelease == [.doubleClick])
+        #expect(cooldownRelease.isEmpty)
+        #expect(laterRelease == [.doubleClick])
+    }
+
+    @Test
+    func doubleClickPostsDistinctClickStatesForBothClicks() {
+        #expect(MouseClickSequence.doubleClickStates == [1, 2])
+    }
+
+    @Test
     func cursorMovementUsesConfidentIndexFingertip() {
         var recognizer = GestureRecognizer()
         let actions = recognizer.process(joints: hand(pinchDistance: 0.08), timestamp: 1)
