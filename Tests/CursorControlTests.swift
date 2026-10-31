@@ -94,4 +94,30 @@ struct CursorControlTests {
 
         #expect(filter.previousRawPoint?.x == 200)
     }
+
+    @Test
+    func virtualDisplayBoundsIncludeDisplaysToTheLeft() {
+        let displays = [
+            CGRect(x: -1_000, y: 0, width: 1_000, height: 800),
+            CGRect(x: 0, y: 0, width: 1_400, height: 900)
+        ]
+
+        #expect(
+            DisplayCoordinateMapper.virtualBounds(for: displays)
+                == CGRect(x: -1_000, y: 0, width: 2_400, height: 900)
+        )
+    }
+
+    @Test
+    func displayMapperClampsPointsInGapsToNearestDisplay() {
+        let displays = [
+            CGRect(x: -1_000, y: 0, width: 800, height: 800),
+            CGRect(x: 0, y: 0, width: 1_000, height: 900)
+        ]
+
+        let point = DisplayCoordinateMapper.constrain(CGPoint(x: -50, y: 450), to: displays)
+
+        #expect(displays.contains { $0.contains(point) })
+        #expect(point.x == 1)
+    }
 }
