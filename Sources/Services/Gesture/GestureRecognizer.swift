@@ -18,6 +18,30 @@ enum ActiveGesture: String, Equatable {
     case trackingLost = "Hand not detected"
 }
 
+enum PinchActionMapping: String, CaseIterable, Identifiable {
+    case leftClick
+    case rightClick
+    case drag
+    case disabled
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .leftClick: "Left click"
+        case .rightClick: "Right click"
+        case .drag: "Drag"
+        case .disabled: "Disabled"
+        }
+    }
+}
+
+enum PinchMappingConflict {
+    static func hasDuplicateAction(index: PinchActionMapping, middle: PinchActionMapping) -> Bool {
+        index != .disabled && index == middle
+    }
+}
+
 struct GestureConfiguration {
     var pinchStartThreshold = 0.32
     var pinchReleaseThreshold = 0.48
@@ -33,6 +57,8 @@ struct GestureConfiguration {
     var dragEnabled = true
     var scrollEnabled = true
     var scrollGestureEnabled = true
+    var indexPinchMapping = PinchActionMapping.leftClick
+    var middlePinchMapping = PinchActionMapping.rightClick
 }
 
 private struct HandGesturePose {
@@ -93,6 +119,7 @@ struct GestureRecognizer {
     private(set) var activeGesture: ActiveGesture = .trackingLost
     private var pinchStartedAt: TimeInterval?
     private var pinchType: ActiveGesture = .click
+    private var activePinchMapping = PinchActionMapping.disabled
     private var lastClickAt: TimeInterval = -.infinity
     private var lastRightClickAt: TimeInterval = -.infinity
     private var previousScrollY: Double?
@@ -122,10 +149,11 @@ struct GestureRecognizer {
             return processScroll(pose, configuration: configuration)
         }
         scrollCandidateY = nil
-        if shouldStartPinch(pose, configuration: configuration) {
+        if let source = pinchSource(pose, configuration: configuration) {
             isPinching = true
             pinchStartedAt = timestamp
-            pinchType = pose.indexPinch <= pose.middlePinch ? .click : .rightClick
+            pinchType = source
+            activePinchMapping = mapping(for: pinchType, configuration: configuration)
             activeGesture = pinchType
             return []
         }
@@ -140,6 +168,7 @@ struct GestureRecognizer {
         isDragging = false
         activeGesture = .trackingLost
         pinchStartedAt = nil
+        activePinchMapping = .disabled
         clearScrollState()
         return actions
     }
@@ -170,10 +199,11 @@ struct GestureRecognizer {
         configuration: GestureConfiguration
     ) -> [GestureAction] {
         if isDragging {
-            guard pose.indexPinch >= configuration.pinchReleaseThreshold else { return [] }
+            guard pinchDistance(pose) >= configuration.pinchReleaseThreshold else { return [] }
             isDragging = false
             isPinching = false
             pinchStartedAt = nil
+            activePinchMapping = .disabled
             activeGesture = .cursor
             return [.endDrag]
         }
@@ -185,11 +215,13 @@ struct GestureRecognizer {
         timestamp: TimeInterval,
         configuration: GestureConfiguration
     ) -> [GestureAction] {
+        let actionMapping = activePinchMapping
         let pinchRemainsActive = pinchType == .click
             ? pose.indexPinch <= configuration.pinchStartThreshold
             : pose.middlePinch <= configuration.pinchStartThreshold
         if pinchRemainsActive {
-            if pinchType == .click, configuration.dragEnabled,
+            let startsDrag = actionMapping == .drag || (pinchType == .click && actionMapping == .leftClick)
+            if startsDrag, configuration.dragEnabled,
                timestamp - (pinchStartedAt ?? timestamp) >= configuration.dragStartDelay {
                 isDragging = true
                 activeGesture = .drag
@@ -201,25 +233,41 @@ struct GestureRecognizer {
 
         isPinching = false
         pinchStartedAt = nil
+        activePinchMapping = .disabled
         activeGesture = .cursor
-        if pinchType == .click, pose.indexPinch <= configuration.pinchReleaseThreshold,
-           timestamp - lastClickAt >= 0.25, configuration.leftClickEnabled {
+        guard pinchDistance(pose) <= configuration.pinchReleaseThreshold else { return [] }
+        switch actionMapping {
+        case .leftClick where configuration.leftClickEnabled && timestamp - lastClickAt >= 0.25:
             lastClickAt = timestamp
             return [.click]
-        }
-        if pinchType == .rightClick, pose.middlePinch <= configuration.pinchReleaseThreshold,
-           timestamp - lastRightClickAt >= 0.35, configuration.rightClickEnabled,
-           configuration.rightClickGestureEnabled {
+        case .rightClick where configuration.rightClickEnabled && timestamp - lastRightClickAt >= 0.35:
             lastRightClickAt = timestamp
             return [.rightClick]
+        case .leftClick, .rightClick, .drag, .disabled:
+            break
         }
         return []
     }
 
-    private func shouldStartPinch(_ pose: HandGesturePose, configuration: GestureConfiguration) -> Bool {
-        pose.indexPinch <= configuration.pinchStartThreshold
-            || (configuration.rightClickEnabled && configuration.rightClickGestureEnabled
-                && pose.middlePinch <= configuration.pinchStartThreshold)
+    private func pinchSource(_ pose: HandGesturePose, configuration: GestureConfiguration) -> ActiveGesture? {
+        let indexPinchIsActive = configuration.indexPinchMapping != .disabled
+            && pose.indexPinch <= configuration.pinchStartThreshold
+        let middlePinchIsActive = configuration.rightClickGestureEnabled
+            && configuration.middlePinchMapping != .disabled
+            && pose.middlePinch <= configuration.pinchStartThreshold
+        guard indexPinchIsActive || middlePinchIsActive else { return nil }
+        guard indexPinchIsActive, middlePinchIsActive else {
+            return indexPinchIsActive ? .click : .rightClick
+        }
+        return pose.indexPinch <= pose.middlePinch ? .click : .rightClick
+    }
+
+    private func mapping(for gesture: ActiveGesture, configuration: GestureConfiguration) -> PinchActionMapping {
+        gesture == .click ? configuration.indexPinchMapping : configuration.middlePinchMapping
+    }
+
+    private func pinchDistance(_ pose: HandGesturePose) -> Double {
+        pinchType == .click ? pose.indexPinch : pose.middlePinch
     }
 
     private mutating func clearScrollState() {

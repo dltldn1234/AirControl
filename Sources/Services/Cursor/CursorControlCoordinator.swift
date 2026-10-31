@@ -119,7 +119,13 @@ final class CursorControlCoordinator: @unchecked Sendable {
             leftClickEnabled: settings.object(forKey: "leftClickEnabled") as? Bool ?? true,
             dragEnabled: settings.object(forKey: "dragEnabled") as? Bool ?? true,
             scrollEnabled: settings.object(forKey: "scrollEnabled") as? Bool ?? true,
-            scrollGestureEnabled: settings.object(forKey: "scrollGestureEnabled") as? Bool ?? true
+            scrollGestureEnabled: settings.object(forKey: "scrollGestureEnabled") as? Bool ?? true,
+            indexPinchMapping: PinchActionMapping(
+                rawValue: settings.string(forKey: "indexPinchActionMapping") ?? PinchActionMapping.leftClick.rawValue
+            ) ?? .leftClick,
+            middlePinchMapping: PinchActionMapping(
+                rawValue: settings.string(forKey: "middlePinchActionMapping") ?? PinchActionMapping.rightClick.rawValue
+            ) ?? .rightClick
         )
         let actions = gestureRecognizer.process(
             joints: joints,
