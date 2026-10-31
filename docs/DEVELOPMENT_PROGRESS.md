@@ -16,8 +16,9 @@ Updated: 2026-11-01
 - A manually dispatched macOS CI workflow is configured. It has not been run; GitHub-hosted macOS minutes can incur charges beyond the account allowance.
 - Phase 11/14 Issue #23 was merged through PR #24; a local universal Release app and ZIP were created and opened once as a smoke test. They have only an ad-hoc linker signature; Developer ID signing and notarization are not configured.
 - Current artifacts: `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01/AirControl.app` and `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01/AirControl-local.zip`; ZIP integrity, universal x86_64/arm64 architecture, bundle identifier, and macOS 14 minimum were checked.
-- Follow-up Issue #25 adds camera interruption and fatal runtime-error reporting; it is in progress on branch `25-fix/camera-runtime-state`.
-- The latest local suite passed 51 tests, with zero SwiftLint violations and a successful Release build.
+- Follow-up Issue #25 was merged through PR #26 and adds camera interruption and fatal runtime-error reporting.
+- Follow-up Issue #27 adds per-pinch action mapping and duplicate-action feedback; it is in progress on branch `27-feat/pinch-action-customization`.
+- The latest local suite passed 56 tests, with zero SwiftLint violations and a successful Release build.
 
 ## Manual verification still required
 
