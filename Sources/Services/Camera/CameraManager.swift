@@ -23,6 +23,28 @@ enum CameraManagerError: LocalizedError {
     }
 }
 
+enum CameraFrameMetrics {
+    static func framesPerSecond(previousFrameTime: CFTimeInterval?, currentFrameTime: CFTimeInterval) -> Double {
+        guard let previousFrameTime else { return 0 }
+        let elapsed = currentFrameTime - previousFrameTime
+        guard elapsed.isFinite, elapsed > 0 else { return 0 }
+        return 1 / elapsed
+    }
+
+    static func cpuPercent(cpuTimeDelta: Double, wallTimeDelta: CFTimeInterval) -> Double? {
+        guard cpuTimeDelta.isFinite, wallTimeDelta.isFinite, cpuTimeDelta >= 0, wallTimeDelta > 0 else {
+            return nil
+        }
+        return min(max(cpuTimeDelta / wallTimeDelta * 100, 0), 100)
+    }
+}
+
+enum CameraPermissionGate {
+    static func allowsCapture(for authorizationStatus: AVAuthorizationStatus) -> Bool {
+        authorizationStatus == .authorized
+    }
+}
+
 final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     let captureSession = AVCaptureSession()
     var onFrame: (([[HandJoint]], Double) -> Void)?
@@ -42,7 +64,7 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
             let granted = await AVCaptureDevice.requestAccess(for: .video)
             authorization = granted ? .authorized : .denied
         }
-        guard authorization == .authorized else {
+        guard CameraPermissionGate.allowsCapture(for: authorization) else {
             throw CameraManagerError.permissionDenied
         }
 
@@ -74,10 +96,16 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
                 }
                 captureSession.stopRunning()
                 videoOutput?.setSampleBufferDelegate(nil, queue: nil)
+                frameQueue.sync {}
+                captureSession.beginConfiguration()
                 captureSession.inputs.forEach(captureSession.removeInput)
                 captureSession.outputs.forEach(captureSession.removeOutput)
+                captureSession.commitConfiguration()
                 videoOutput = nil
                 lastFrameTime = nil
+                previousCPUTime = nil
+                previousCPUWallTime = nil
+                currentCPUPercent = 0
                 DispatchQueue.main.async { [weak self] in
                     self?.onFrame?([], 0)
                 }
@@ -126,7 +154,7 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
         let currentTime = CACurrentMediaTime()
         let hands = handPoseDetector.detect(in: pixelBuffer)
         let finishedTime = CACurrentMediaTime()
-        let fps = lastFrameTime.map { 1 / (finishedTime - $0) } ?? 0
+        let fps = CameraFrameMetrics.framesPerSecond(previousFrameTime: lastFrameTime, currentFrameTime: finishedTime)
         let inferenceMilliseconds = (finishedTime - currentTime) * 1_000
         lastFrameTime = finishedTime
         measureCPU(at: finishedTime)
@@ -144,7 +172,10 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
         let system = Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) / 1_000_000
         let cpuTime = user + system
         if let previousCPUTime, let previousCPUWallTime, wallTime > previousCPUWallTime {
-            currentCPUPercent = min(max((cpuTime - previousCPUTime) / (wallTime - previousCPUWallTime) * 100, 0), 100)
+            currentCPUPercent = CameraFrameMetrics.cpuPercent(
+                cpuTimeDelta: cpuTime - previousCPUTime,
+                wallTimeDelta: wallTime - previousCPUWallTime
+            ) ?? currentCPUPercent
         }
         previousCPUTime = cpuTime
         previousCPUWallTime = wallTime

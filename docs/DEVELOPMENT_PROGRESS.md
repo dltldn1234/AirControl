@@ -10,7 +10,9 @@ Updated: 2026-11-01
 - Calibration wizard now captures a normalized cursor area and pinch thresholds, stores a local per-user profile, and exposes mirror control and reset in Settings.
 - The latest macOS unit-test run passed after adding calibration tests. Strict SwiftLint passed with zero violations.
 - Phase 8 Issue #19 is in progress on branch `19-feat/native-ui-docs`; menu toggle state recovery and seven project guides have been added locally.
-- No GitHub Actions CI workflow is configured yet; PRs currently have no remote status checks.
+- Phase 9–10 Issue #21 is in progress on branch `21-feat/camera-reliability-ci`.
+- Camera stop now detaches and drains the serial frame queue before removing session resources; CPU timing resets across restart. FPS and CPU calculations reject invalid intervals and have deterministic tests.
+- A manually dispatched macOS CI workflow is configured. It has not been run; GitHub-hosted macOS minutes can incur charges beyond the account allowance.
 
 ## Manual verification still required
 
@@ -20,11 +22,10 @@ Updated: 2026-11-01
 
 ## Next work
 
-1. Improve gesture confidence and state transitions using deterministic tests and existing hand-pose data contracts.
-2. Audit camera lifecycle, frame metrics, and stop/restart behavior.
-3. Complete UI/UX and workflow documentation.
-4. Add a minimal macOS CI workflow under an Issue-first branch, then run Debug and Release builds, tests, and lint.
-5. Do not claim manual validation without evidence.
+1. Review CI workflow setup and usage, then complete Issue #21.
+2. Continue gesture confidence, customization, and state transition tests.
+3. Build a local unsigned app bundle and verify its contents.
+4. Do not claim manual validation without evidence.
 
 ## Safety notes
 

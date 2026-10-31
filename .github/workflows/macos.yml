@@ -1,0 +1,39 @@
+name: macOS CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Generate, lint, test, and build
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install project tools
+        run: brew install tuist swiftlint
+
+      - name: Generate Xcode project
+        run: tuist generate --no-open
+
+      - name: Run SwiftLint
+        run: swiftlint lint --strict
+
+      - name: Run macOS unit tests
+        run: >-
+          xcodebuild -project AirControl.xcodeproj -scheme AirControl
+          -destination 'platform=macOS,arch=arm64'
+          CODE_SIGNING_ALLOWED=NO test
+
+      - name: Build Release app
+        run: >-
+          xcodebuild -project AirControl.xcodeproj -scheme AirControl
+          -configuration Release
+          -destination 'platform=macOS,arch=arm64'
+          CODE_SIGNING_ALLOWED=NO build
