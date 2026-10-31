@@ -36,13 +36,22 @@ struct GestureConfiguration {
 }
 
 private struct HandGesturePose {
+    private static let cursorTipConfidenceThreshold = 0.55
+
     let indexTip: CGPoint
     let indexPinch: Double
     let middlePinch: Double
     let scrollPose: Bool
 
     init?(joints: [HandJoint]) {
-        guard let indexTip = Self.point("indexTip", in: joints),
+        // Cursor position always comes from the index fingertip. A low-confidence
+        // fingertip is treated as tracking loss so the cursor cannot jump to a
+        // palm or wrist fallback.
+        guard let indexTip = Self.point(
+            "indexTip",
+            in: joints,
+            minimumConfidence: Self.cursorTipConfidenceThreshold
+        ),
               let wrist = Self.point("wrist", in: joints),
               let indexMCP = Self.point("indexMCP", in: joints),
               let thumbTip = Self.point("thumbTip", in: joints) else { return nil }
@@ -62,8 +71,14 @@ private struct HandGesturePose {
         }
     }
 
-    private static func point(_ name: String, in joints: [HandJoint]) -> CGPoint? {
-        guard let joint = joints.first(where: { $0.name.contains(name) }) else { return nil }
+    private static func point(
+        _ name: String,
+        in joints: [HandJoint],
+        minimumConfidence: Double = 0.25
+    ) -> CGPoint? {
+        guard let joint = joints.first(where: {
+            $0.name.contains(name) && $0.confidence >= minimumConfidence
+        }) else { return nil }
         return CGPoint(x: joint.normalizedX, y: joint.normalizedY)
     }
 

@@ -49,6 +49,15 @@ struct CameraTrackingView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
+            Label(
+                viewModel.joints.contains { $0.name == "indexTip" && $0.confidence >= 0.55 }
+                    ? "Pointer target: index fingertip"
+                    : "Pointer target: waiting for a clear index fingertip",
+                systemImage: "cursorarrow"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
             VStack(alignment: .leading, spacing: 3) {
                 Label("Mode: \(viewModel.windowGestureMode.rawValue)", systemImage: "macwindow")
                     .font(.caption.weight(.semibold))
@@ -135,8 +144,15 @@ private struct HandJointOverlay: View {
                     x: (1 - joint.normalizedX) * size.width,
                     y: (1 - joint.normalizedY) * size.height
                 )
-                let marker = CGRect(x: point.x - 4, y: point.y - 4, width: 8, height: 8)
-                context.fill(Path(ellipseIn: marker), with: .color(.green))
+                if joint.name == "indexTip" {
+                    let marker = CGRect(x: point.x - 7, y: point.y - 7, width: 14, height: 14)
+                    context.stroke(Path(ellipseIn: marker), with: .color(.yellow), lineWidth: 2)
+                    let center = CGRect(x: point.x - 2, y: point.y - 2, width: 4, height: 4)
+                    context.fill(Path(ellipseIn: center), with: .color(.yellow))
+                } else {
+                    let marker = CGRect(x: point.x - 3, y: point.y - 3, width: 6, height: 6)
+                    context.fill(Path(ellipseIn: marker), with: .color(.green))
+                }
             }
         }
         .allowsHitTesting(false)
