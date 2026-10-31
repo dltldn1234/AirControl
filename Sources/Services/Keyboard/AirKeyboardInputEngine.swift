@@ -34,7 +34,7 @@ enum AirKeyboardPermissionGate {
     }
 }
 
-final class AirKeyboardInputEngine {
+final class AirKeyboardInputEngine: @unchecked Sendable {
     private let eventQueue = DispatchQueue(label: "aircontrol.keyboard.events", qos: .userInteractive)
     private var isEnabled = false
 
@@ -50,32 +50,44 @@ final class AirKeyboardInputEngine {
         eventQueue.sync { isEnabled = enabled }
     }
 
-    @discardableResult
-    func send(_ action: AirKeyboardAction, shifted: Bool = false) -> Bool {
-        return eventQueue.sync {
+    func send(
+        _ action: AirKeyboardAction,
+        shifted: Bool = false,
+        completion: @escaping @MainActor (Bool) -> Void
+    ) {
+        eventQueue.async { [weak self] in
+            guard let self else { return }
             guard AirKeyboardPermissionGate.allowsInput(
                 isActive: isEnabled,
                 isTrusted: isAccessibilityTrusted,
                 isSecureFieldFocused: isSecureTextFieldFocused
-            ) else { return false }
+            ) else {
+                Task { @MainActor in completion(false) }
+                return
+            }
+            let result: Bool
             switch action {
             case let .character(character, keyRequiresShift):
-                guard let mapping = AirKeyboardKeyCode.code(for: character) else { return false }
+                guard let mapping = AirKeyboardKeyCode.code(for: character) else {
+                    Task { @MainActor in completion(false) }
+                    return
+                }
                 let needsShift = shifted != (mapping.requiresShift != keyRequiresShift)
-                return postKey(mapping.code, flags: needsShift ? .maskShift : [])
+                result = postKey(mapping.code, flags: needsShift ? .maskShift : [])
             case .space:
-                return postKey(49, flags: shifted ? .maskShift : [])
+                result = postKey(49, flags: shifted ? .maskShift : [])
             case .enter:
-                return postKey(36, flags: shifted ? .maskShift : [])
+                result = postKey(36, flags: shifted ? .maskShift : [])
             case .backspace:
-                return postKey(51, flags: shifted ? .maskShift : [])
+                result = postKey(51, flags: shifted ? .maskShift : [])
             case .capsLock:
-                return postKey(57, flags: [])
+                result = postKey(57, flags: [])
             case .inputSourceToggle:
-                return postKey(49, flags: .maskControl)
+                result = postKey(49, flags: .maskControl)
             case .shift:
-                return false
+                result = false
             }
+            Task { @MainActor in completion(result) }
         }
     }
 
