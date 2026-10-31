@@ -112,14 +112,15 @@ struct SettingsView: View {
                 Toggle("Drag", isOn: $dragEnabled)
                 Toggle("Two-finger scroll", isOn: $scrollEnabled)
                 Toggle("Right click enabled", isOn: $rightClickEnabled)
-                Toggle("Thumb + middle finger right click", isOn: $rightClickGestureEnabled)
-                    .disabled(!rightClickEnabled)
+                Toggle("Thumb + middle pinch enabled", isOn: $rightClickGestureEnabled)
                 Toggle("Show camera preview", isOn: $showsCameraPreview)
                 if !statusMessage.isEmpty {
                     Text(statusMessage)
                         .foregroundStyle(.secondary)
                 }
             }
+
+            PinchMappingSettingsSection()
 
             Section("Calibration") {
                 Toggle(
@@ -263,5 +264,39 @@ struct SettingsView: View {
             sensitivity: airKeyboardSensitivity,
             language: language
         )
+    }
+}
+
+private struct PinchMappingSettingsSection: View {
+    @AppStorage("indexPinchActionMapping")
+    private var indexPinchActionMapping = PinchActionMapping.leftClick.rawValue
+    @AppStorage("middlePinchActionMapping")
+    private var middlePinchActionMapping = PinchActionMapping.rightClick.rawValue
+
+    var body: some View {
+        Section("Pinch mapping") {
+            Picker("Thumb + index pinch", selection: $indexPinchActionMapping) {
+                ForEach(PinchActionMapping.allCases) { mapping in
+                    Text(mapping.title).tag(mapping.rawValue)
+                }
+            }
+            Picker("Thumb + middle pinch", selection: $middlePinchActionMapping) {
+                ForEach(PinchActionMapping.allCases) { mapping in
+                    Text(mapping.title).tag(mapping.rawValue)
+                }
+            }
+            if PinchMappingConflict.hasDuplicateAction(
+                index: PinchActionMapping(rawValue: indexPinchActionMapping) ?? .leftClick,
+                middle: PinchActionMapping(rawValue: middlePinchActionMapping) ?? .rightClick
+            ) {
+                Label("Both pinch gestures use the same action.", systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+            Button("Reset pinch mappings") {
+                indexPinchActionMapping = PinchActionMapping.leftClick.rawValue
+                middlePinchActionMapping = PinchActionMapping.rightClick.rawValue
+            }
+        }
     }
 }

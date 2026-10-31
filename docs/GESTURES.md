@@ -16,3 +16,5 @@ Cursor and window control are opt-in. Start the camera first; enable cursor cont
 | Hand keyboard mode | Select and activate virtual key | Keyboard is opt-in and independent of cursor input. |
 
 Gesture thresholds and behavior can vary with camera framing, lighting, hand pose, and Vision confidence. Use Settings to tune supported sensitivities and calibrate the cursor range.
+
+Settings lets you map thumb-index and thumb-middle pinches independently to left click, right click, drag, or disabled. Drag follows the configured hold delay. If both pinches use the same action, Settings shows a duplicate-mapping warning; the closer recognized pinch source determines which mapping is active.

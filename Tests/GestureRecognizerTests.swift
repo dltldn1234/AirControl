@@ -108,6 +108,84 @@ struct GestureRecognizerTests {
     }
 
     @Test
+    func indexPinchCanBeMappedToRightClick() {
+        var recognizer = GestureRecognizer()
+        var configuration = GestureConfiguration()
+        configuration.indexPinchMapping = .rightClick
+        _ = recognizer.process(joints: hand(pinchDistance: 0.02), timestamp: 1, configuration: configuration)
+        let actions = recognizer.process(
+            joints: hand(pinchDistance: 0.08),
+            timestamp: 1.1,
+            configuration: configuration
+        )
+
+        #expect(actions == [.rightClick])
+    }
+
+    @Test
+    func middlePinchCanBeMappedToLeftClick() {
+        var recognizer = GestureRecognizer()
+        var configuration = GestureConfiguration()
+        configuration.middlePinchMapping = .leftClick
+        _ = recognizer.process(
+            joints: hand(middlePinchDistance: 0.01),
+            timestamp: 1,
+            configuration: configuration
+        )
+        let actions = recognizer.process(
+            joints: hand(middlePinchDistance: 0.08),
+            timestamp: 1.1,
+            configuration: configuration
+        )
+
+        #expect(actions == [.click])
+    }
+
+    @Test
+    func mappedDragStartsAfterDelayAndTrackingLossReleasesIt() {
+        var recognizer = GestureRecognizer()
+        var configuration = GestureConfiguration()
+        configuration.middlePinchMapping = .drag
+        configuration.dragStartDelay = 0.2
+        _ = recognizer.process(
+            joints: hand(middlePinchDistance: 0.01),
+            timestamp: 1,
+            configuration: configuration
+        )
+        let dragActions = recognizer.process(
+            joints: hand(middlePinchDistance: 0.01),
+            timestamp: 1.3,
+            configuration: configuration
+        )
+        let lossActions = recognizer.process(joints: [], timestamp: 1.4, configuration: configuration)
+
+        #expect(dragActions == [.beginDrag])
+        #expect(lossActions == [.endDrag])
+    }
+
+    @Test
+    func disabledPinchMappingDoesNotStartGesture() {
+        var recognizer = GestureRecognizer()
+        var configuration = GestureConfiguration()
+        configuration.indexPinchMapping = .disabled
+        let actions = recognizer.process(
+            joints: hand(pinchDistance: 0.02),
+            timestamp: 1,
+            configuration: configuration
+        )
+
+        #expect(actions.contains(.move(normalizedX: 0.5, normalizedY: 0.6)))
+        #expect(!recognizer.isPinching)
+    }
+
+    @Test
+    func duplicatePinchActionsAreReportedUnlessDisabled() {
+        #expect(PinchMappingConflict.hasDuplicateAction(index: .leftClick, middle: .leftClick))
+        #expect(!PinchMappingConflict.hasDuplicateAction(index: .leftClick, middle: .rightClick))
+        #expect(!PinchMappingConflict.hasDuplicateAction(index: .disabled, middle: .disabled))
+    }
+
+    @Test
     func scrollGestureReturnsToCursorWithoutMovingDuringScroll() {
         var recognizer = GestureRecognizer()
         _ = recognizer.process(joints: scrollHand(indexY: 0.6), timestamp: 1)
