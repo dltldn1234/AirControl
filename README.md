@@ -71,5 +71,6 @@ Air Keyboard is an optional non-activating floating panel controlled by the Visi
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Local release and signing](docs/RELEASE.md)
 - [Air Keyboard](docs/AIR_KEYBOARD.md)
+- [Final QA matrix](docs/FINAL_QA.md)
 
 Unit tests do not verify physical hand tracking, real system input, Korean IME behavior, third-party Accessibility support, or multi-monitor ergonomics. These still require hands-on validation. Local Release builds are not signed or notarized for distribution.
