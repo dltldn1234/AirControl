@@ -45,10 +45,19 @@ enum CameraPermissionGate {
     }
 }
 
+enum CameraManagerStatus: Equatable {
+    case interrupted(String)
+    case resumed
+    case failed(String)
+
+    static let interruptionMessage = "Camera capture was interrupted by macOS."
+}
+
 final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     let captureSession = AVCaptureSession()
     var onFrame: (([[HandJoint]], Double) -> Void)?
     var onPerformance: ((Double, Double) -> Void)?
+    var onStatus: ((CameraManagerStatus) -> Void)?
 
     private let sessionQueue = DispatchQueue(label: "aircontrol.camera.session")
     private let frameQueue = DispatchQueue(label: "aircontrol.camera.frames", qos: .userInteractive)
@@ -57,6 +66,16 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
     private var lastFrameTime: CFTimeInterval?
     private var previousCPUTime: Double?
     private var previousCPUWallTime: CFTimeInterval?
+    private var notificationObservers: [NSObjectProtocol] = []
+
+    override init() {
+        super.init()
+        observeSessionNotifications()
+    }
+
+    deinit {
+        notificationObservers.forEach(NotificationCenter.default.removeObserver)
+    }
 
     func start() async throws {
         var authorization = AVCaptureDevice.authorizationStatus(for: .video)
@@ -94,23 +113,74 @@ final class CameraManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
                     continuation.resume()
                     return
                 }
-                captureSession.stopRunning()
-                videoOutput?.setSampleBufferDelegate(nil, queue: nil)
-                frameQueue.sync {}
-                captureSession.beginConfiguration()
-                captureSession.inputs.forEach(captureSession.removeInput)
-                captureSession.outputs.forEach(captureSession.removeOutput)
-                captureSession.commitConfiguration()
-                videoOutput = nil
-                lastFrameTime = nil
-                previousCPUTime = nil
-                previousCPUWallTime = nil
-                currentCPUPercent = 0
-                DispatchQueue.main.async { [weak self] in
-                    self?.onFrame?([], 0)
-                }
+                tearDownSession()
+                deliverEmptyFrame()
                 continuation.resume()
             }
+        }
+    }
+
+    private func observeSessionNotifications() {
+        let center = NotificationCenter.default
+        notificationObservers.append(center.addObserver(
+            forName: AVCaptureSession.wasInterruptedNotification,
+            object: captureSession,
+            queue: nil
+        ) { [weak self] _ in
+            guard let self else { return }
+            sessionQueue.async { [weak self] in
+                self?.deliverEmptyFrame()
+                self?.deliverStatus(.interrupted(CameraManagerStatus.interruptionMessage))
+            }
+        })
+        notificationObservers.append(center.addObserver(
+            forName: AVCaptureSession.interruptionEndedNotification,
+            object: captureSession,
+            queue: nil
+        ) { [weak self] _ in
+            guard let self else { return }
+            sessionQueue.async { [weak self] in self?.deliverStatus(.resumed) }
+        })
+        notificationObservers.append(center.addObserver(
+            forName: AVCaptureSession.runtimeErrorNotification,
+            object: captureSession,
+            queue: nil
+        ) { [weak self] notification in
+            guard let self else { return }
+            sessionQueue.async { [weak self] in
+                guard let self else { return }
+                let error = notification.userInfo?[AVCaptureSessionErrorKey] as? AVError
+                self.tearDownSession()
+                self.deliverEmptyFrame()
+                self.deliverStatus(.failed(error?.localizedDescription ?? "Camera encountered a runtime error."))
+            }
+        })
+    }
+
+    private func tearDownSession() {
+        captureSession.stopRunning()
+        videoOutput?.setSampleBufferDelegate(nil, queue: nil)
+        frameQueue.sync {}
+        captureSession.beginConfiguration()
+        captureSession.inputs.forEach(captureSession.removeInput)
+        captureSession.outputs.forEach(captureSession.removeOutput)
+        captureSession.commitConfiguration()
+        videoOutput = nil
+        lastFrameTime = nil
+        previousCPUTime = nil
+        previousCPUWallTime = nil
+        currentCPUPercent = 0
+    }
+
+    private func deliverEmptyFrame() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onFrame?([], 0)
+        }
+    }
+
+    private func deliverStatus(_ status: CameraManagerStatus) {
+        DispatchQueue.main.async { [weak self] in
+            self?.onStatus?(status)
         }
     }
 

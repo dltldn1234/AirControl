@@ -9,6 +9,13 @@ final class CameraMetricsTests: XCTestCase {
         XCTAssertFalse(CameraPermissionGate.allowsCapture(for: .notDetermined))
     }
 
+    func testCameraInterruptionReasonMapsToActionableStatus() {
+        XCTAssertEqual(
+            CameraManagerStatus.interruptionMessage,
+            "Camera capture was interrupted by macOS."
+        )
+    }
+
     func testFramesPerSecondUsesElapsedFrameTime() {
         XCTAssertEqual(
             CameraFrameMetrics.framesPerSecond(previousFrameTime: 2, currentFrameTime: 2.05),
