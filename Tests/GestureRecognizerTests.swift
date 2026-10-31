@@ -1,3 +1,4 @@
+import CoreGraphics
 import Testing
 @testable import AirControl
 
@@ -45,6 +46,24 @@ struct GestureRecognizerTests {
     @Test
     func doubleClickPostsDistinctClickStatesForBothClicks() {
         #expect(MouseClickSequence.doubleClickStates == [1, 2])
+    }
+
+    @Test
+    func mouseClickDoesNotPostWhenMatchingReleaseCannotBeCreated() {
+        guard let event = CGEvent(source: nil) else {
+            #expect(Bool(false))
+            return
+        }
+        var postedEventCount = 0
+
+        let wasPosted = MouseClickEventPair.post(down: event, upEvent: nil) { _ in
+            postedEventCount += 1
+        }
+
+        #expect(!wasPosted)
+        #expect(postedEventCount == 0)
+        #expect(MouseClickEventPair.post(down: event, upEvent: event) { _ in postedEventCount += 1 })
+        #expect(postedEventCount == 2)
     }
 
     @Test
