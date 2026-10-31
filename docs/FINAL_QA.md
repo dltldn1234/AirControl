@@ -21,7 +21,7 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 15 | Emergency stop works | NOT TESTED | Escape handling is implemented; no live event session was used. |
 | 16 | Settings persist | PASS | Calibration profile round-trip is unit tested; full UI settings persistence was not manually checked. |
 | 17 | macOS build succeeds | PASS | Tuist generation and Debug test build passed; Release build passed. |
-| 18 | Automated tests pass | PASS | Latest suite: 50 passed, 0 failed, 0 skipped. |
+| 18 | Automated tests pass | PASS | Latest suite: 51 passed, 0 failed, 0 skipped. |
 | 19 | Documentation is current | PASS | README and architecture, development, gesture, calibration, testing, troubleshooting, release, keyboard, and QA docs are present. |
 | 20 | Local app bundle is ready | PASS | Universal local `.app` and ZIP were created and inspected at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01/`. Bundle contains an ad-hoc linker signature only; Developer ID signing/notarization is not included. |
 
