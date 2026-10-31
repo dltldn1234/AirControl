@@ -40,4 +40,58 @@ struct CursorControlTests {
         #expect(!CursorPermissionGate.allowsInput(isEnabled: true, isTrusted: false))
         #expect(CursorPermissionGate.allowsInput(isEnabled: true, isTrusted: true))
     }
+
+    @Test
+    func oneEuroFilterKeepsSubDeadZoneNoiseStill() {
+        var filter = OneEuroCursorFilter()
+        let initial = CGPoint(x: 400, y: 300)
+        _ = filter.apply(initial, timestamp: 1)
+        let output = filter.apply(
+            CGPoint(x: 401, y: 300),
+            timestamp: 1.02,
+            configuration: CursorFilterConfiguration(deadZone: 2)
+        )
+
+        #expect(output == initial)
+    }
+
+    @Test
+    func oneEuroFilterAdaptsToFasterMovement() {
+        var steadyFilter = OneEuroCursorFilter()
+        var adaptiveFilter = OneEuroCursorFilter()
+        _ = steadyFilter.apply(.zero, timestamp: 1)
+        _ = adaptiveFilter.apply(.zero, timestamp: 1)
+
+        let steady = steadyFilter.apply(
+            CGPoint(x: 100, y: 0),
+            timestamp: 1.02,
+            configuration: CursorFilterConfiguration(minimumCutoff: 1, beta: 0, deadZone: 0)
+        )
+        let adaptive = adaptiveFilter.apply(
+            CGPoint(x: 100, y: 0),
+            timestamp: 1.02,
+            configuration: CursorFilterConfiguration(minimumCutoff: 1, beta: 0.1, deadZone: 0)
+        )
+
+        #expect(adaptive.x > steady.x)
+    }
+
+    @Test
+    func oneEuroFilterLimitsSuddenCoordinateOutliers() {
+        var filter = OneEuroCursorFilter()
+        _ = filter.apply(CGPoint(x: 100, y: 100), timestamp: 1)
+        _ = filter.apply(
+            CGPoint(x: 5_000, y: 100),
+            timestamp: 1.02,
+            configuration: CursorFilterConfiguration(
+                minimumCutoff: 1,
+                beta: 0,
+                deadZone: 0,
+                maximumSpeed: 100_000,
+                maximumJump: 100
+            )
+        )
+
+        #expect(filter.previousRawPoint?.x == 200)
+    }
 }
