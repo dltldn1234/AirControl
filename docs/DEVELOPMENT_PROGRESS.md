@@ -15,12 +15,12 @@ Updated: 2026-11-01
 - Camera stop now detaches and drains the serial frame queue before removing session resources; CPU timing resets across restart. FPS and CPU calculations reject invalid intervals and have deterministic tests.
 - A manually dispatched macOS CI workflow is configured. It has not been run; GitHub-hosted macOS minutes can incur charges beyond the account allowance.
 - Phase 11/14 Issue #23 was merged through PR #24; a local universal Release app and ZIP were created and opened once as a smoke test. They have only an ad-hoc linker signature; Developer ID signing and notarization are not configured.
-- Current artifacts: `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01/AirControl.app` and `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01/AirControl-local.zip`; ZIP integrity, universal x86_64/arm64 architecture, bundle identifier, and macOS 14 minimum were checked.
+- Latest artifacts (built from `main` after PR #30): `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/AirControl.app` and `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/AirControl-local.zip`; ZIP integrity, universal x86_64/arm64 architecture, bundle identifier, and macOS 14 minimum were checked.
 - Follow-up Issue #25 was merged through PR #26 and adds camera interruption and fatal runtime-error reporting.
 - Follow-up Issue #27 was merged through PR #28 and adds per-pinch action mapping and duplicate-action feedback.
-- Issue #29 adds allowlisted JSON settings export/import; it is in progress on branch `29-feat/settings-backup`.
+- Issue #29 was merged through PR #30 and adds allowlisted JSON settings export/import.
 - Imported settings validate value ranges and string enums and force cursor, keyboard, window, and app-switch controls off.
-- The latest local suite passed 59 tests, with zero SwiftLint violations and a successful Release build.
+- The latest local suite passed 59 tests, with zero SwiftLint violations. Tuist generation, Debug build, Release build, ZIP integrity, and launching/quitting the menu bar app all passed.
 
 ## Manual verification still required
 
@@ -30,9 +30,10 @@ Updated: 2026-11-01
 
 ## Next work
 
-1. Finish Issue #23 with the QA matrix, app bundle integrity checks, and final local verification.
-2. Continue gesture confidence, customization, and state transition work if evidence identifies specific gaps.
-3. Do not claim manual validation without evidence.
+1. Complete physical-camera, Accessibility, Korean IME, window control, app switching, and multi-monitor checks when the user is available.
+2. Dispatch macOS CI only after reviewing the repository's Actions billing allowance.
+3. Developer ID signing and notarization require the user's Apple Developer credentials.
+4. Do not claim manual validation without evidence.
 
 ## Safety notes
 
