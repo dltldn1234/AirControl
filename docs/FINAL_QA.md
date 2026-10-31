@@ -21,11 +21,13 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 15 | Emergency stop works | NOT TESTED | Escape handling is implemented; no live event session was used. |
 | 16 | Settings persist | PASS | Calibration profile round-trip is unit tested; full UI settings persistence was not manually checked. |
 | 17 | macOS build succeeds | PASS | Tuist generation and Debug test build passed; Release build passed. |
-| 18 | Automated tests pass | PASS | Latest suite: 59 passed, 0 failed, 0 skipped. |
+| 18 | Automated tests pass | PASS | Latest suite: 62 passed, 0 failed, 0 skipped. Includes bounded latest-frame buffering tests; live camera latency remains NOT TESTED. |
 | 19 | Documentation is current | PASS | README and architecture, development, gesture, calibration, testing, troubleshooting, release, keyboard, and QA docs are present. |
 | 20 | Local app bundle is ready | PASS | Universal local `.app` and ZIP were created, inspected, and smoke-launched at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/`. Bundle contains an ad-hoc linker signature only; Developer ID signing/notarization is not included. |
 
 ## Phase status
+
+- Performance follow-up #35: bounded latest-frame queue is covered by unit tests; before/after camera latency and CPU comparison remains NOT TESTED.
 
 - Phase 0: PASS — repository, project, and workflow audited.
 - Phases 1–7: IMPLEMENTED IN SOURCE — build and deterministic tests pass; cursor smoothing, calibration, per-pinch action mapping, conflict feedback, and safe settings export/import are included. Camera, system input, AX, IME, and multi-display interaction remain manually unverified.
