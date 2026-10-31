@@ -51,6 +51,8 @@ The app bundle includes `NSCameraUsageDescription`. Camera access is requested o
 
 Cursor input is never emitted unless the camera is running, the user has enabled cursor control, and macOS reports Accessibility authorization.
 
+Settings includes a calibration wizard for the comfortable index-finger range and normalized pinch thresholds. Profiles stay in the current macOS user's preferences.
+
 The tracking panel reports the current gesture, processed Vision FPS, inference latency, and estimated app CPU usage. Rendering updates are throttled separately from camera-frame inference.
 
 Window and app controls are opt-in in Settings and require Accessibility permission. Hold an open palm to enter window mode, pinch and move to reposition the focused window, use two open hands to resize, and hold a fist to exit. A three-finger horizontal swipe switches among visible regular applications. Some apps do not expose writable AX window attributes; AirControl skips those windows. macOS Spaces and full-screen desktop navigation are not controlled.
@@ -58,3 +60,16 @@ Window and app controls are opt-in in Settings and require Accessibility permiss
 ## Air Keyboard
 
 Air Keyboard is an optional non-activating floating panel controlled by the Vision index fingertip and thumb-index pinch. It supports English QWERTY and Korean Dubeolsik labels, basic editing keys, and settings for size, opacity, sensitivity, and feedback. It pauses cursor and window gestures while active and requires Accessibility access. Korean IME composition and focus retention vary by target app and must be checked manually. See [Air Keyboard documentation](docs/AIR_KEYBOARD.md).
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Development setup and workflow](docs/DEVELOPMENT.md)
+- [Gesture guide](docs/GESTURES.md)
+- [Cursor calibration](docs/CALIBRATION.md)
+- [Testing and manual QA](docs/TESTING.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Local release and signing](docs/RELEASE.md)
+- [Air Keyboard](docs/AIR_KEYBOARD.md)
+
+Unit tests do not verify physical hand tracking, real system input, Korean IME behavior, third-party Accessibility support, or multi-monitor ergonomics. These still require hands-on validation. Local Release builds are not signed or notarized for distribution.
