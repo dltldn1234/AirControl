@@ -55,6 +55,13 @@ Updated: 2026-11-01
 - Added recognition cooldown, click-state sequence, and settings round-trip coverage. macOS arm64 suite: 67 passed, 0 failed, 0 skipped; Release build passed; strict SwiftLint reported 0 violations in 43 files.
 - Actual system double-click delivery through Accessibility and a hand gesture remains NOT TESTED.
 
+## Latest continuation: paired mouse click dispatch
+
+- Issue #45 routes left click, right click, and each click in a double-click through a paired event path that constructs both down and up events before posting either one.
+- This avoids posting a button-down when construction of its corresponding release event fails. Existing Accessibility and control-enabled gates remain in place.
+- Added a test proving an incomplete event pair posts nothing and a complete pair posts both events. The test validates planning only and never posts system input.
+- macOS arm64 suite: 68 passed, 0 failed, 0 skipped; Release build passed; strict SwiftLint reported 0 violations in 43 files.
+
 ## Manual verification still required
 
 - Run the calibration wizard with the built-in camera and confirm cursor range and pinch thresholds feel correct.
