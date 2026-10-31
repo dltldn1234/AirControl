@@ -36,7 +36,7 @@ enum AirKeyboardLayout {
         }
         let secondRow = Array(language == .english
             ? (shifted ? "ASDFGHJKL:" : "asdfghjkl;")
-            : "ㅁㄴㅇㄹㅎㅗㅓㅏㅣㅔ")
+            : "ㅁㄴㅇㄹㅎㅗㅓㅏㅣ")
         let thirdRow: [Character] = if language == .english {
             Array(shifted ? "ZXCVBNM<>?" : "zxcvbnm,./")
         } else if shifted {
@@ -45,7 +45,7 @@ enum AirKeyboardLayout {
             Array("ㅋㅌㅊㅍㅠㅜㅡ,./")
         }
         let physicalFirst = Array("qwertyuiop")
-        let physicalSecond = Array("asdfghjkl;")
+        let physicalSecond = Array(language == .english ? "asdfghjkl;" : "asdfghjkl")
         let physicalThird = Array("zxcvbnm,./")
 
         return [

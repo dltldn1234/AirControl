@@ -29,6 +29,12 @@ Updated: 2026-11-01
 - Added tests for newest-frame selection, scheduler re-arming, and empty-frame retention. Latest macOS arm64 suite: 62 passed, 0 failed, 0 skipped; Debug build and strict SwiftLint pass.
 - Live latency/CPU comparison requires camera use and remains unmeasured. No performance improvement percentage is claimed.
 
+## Latest continuation: Korean keyboard mapping
+
+- Issue #37 corrected the Korean Dubeolsik middle row to map its nine letter keys to physical `a` through `l`; the English ten-key row remains unchanged.
+- Added a regression test for all nine Korean labels and absence of a semicolon key. Latest macOS arm64 suite: 63 passed, 0 failed, 0 skipped; Debug build and strict SwiftLint pass.
+- This validates the layout mapping only. Actual Korean IME composition and the configured Control-Space shortcut still require manual validation in a regular text field.
+
 ## Manual verification still required
 
 - Run the calibration wizard with the built-in camera and confirm cursor range and pinch thresholds feel correct.
