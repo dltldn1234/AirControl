@@ -19,6 +19,7 @@ final class CameraTrackingViewModel: ObservableObject {
 
     let cameraManager = CameraManager()
     private let cursorCoordinator = CursorControlCoordinator.shared
+    private let airKeyboardCoordinator = AirKeyboardCoordinator.shared
     private var lastFrameUIUpdate = 0.0
     private var lastMetricsUIUpdate = 0.0
 
@@ -34,6 +35,7 @@ final class CameraTrackingViewModel: ObservableObject {
         cameraManager.onFrame = { [weak self] hands, fps in
             self?.cursorCoordinator.processFrame(hands)
             Task { @MainActor in
+                self?.airKeyboardCoordinator.processFrame(hands)
                 let now = ProcessInfo.processInfo.systemUptime
                 guard now - (self?.lastFrameUIUpdate ?? 0) >= 1.0 / 20 else { return }
                 self?.lastFrameUIUpdate = now
@@ -62,6 +64,7 @@ final class CameraTrackingViewModel: ObservableObject {
                 try await cameraManager.start()
                 isRunning = true
                 cursorCoordinator.setCameraRunning(true)
+                airKeyboardCoordinator.setCameraRunning(true)
                 status = "Looking for a hand…"
             } catch {
                 status = error.localizedDescription
@@ -72,6 +75,7 @@ final class CameraTrackingViewModel: ObservableObject {
 
     func stopCamera() {
         guard isRunning || isStarting else { return }
+        airKeyboardCoordinator.setCameraRunning(false)
         cursorCoordinator.setCameraRunning(false)
         cursorControlEnabled = false
         UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
@@ -120,6 +124,7 @@ final class CameraTrackingViewModel: ObservableObject {
     }
 
     func emergencyStop() {
+        airKeyboardCoordinator.deactivate()
         cursorCoordinator.emergencyStop()
         cursorControlEnabled = false
         gestureStatus = .trackingLost

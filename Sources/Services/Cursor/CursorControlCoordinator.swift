@@ -10,6 +10,7 @@ final class CursorControlCoordinator: @unchecked Sendable {
     private var gestureRecognizer = GestureRecognizer()
     private var cameraIsRunning = false
     private var isEnabled = false
+    private var isAirKeyboardActive = false
     private var lastUIUpdate = Date.distantPast
     private var gestureStatusHandler: ((ActiveGesture) -> Void)?
 
@@ -57,6 +58,21 @@ final class CursorControlCoordinator: @unchecked Sendable {
         }
     }
 
+    func setAirKeyboardActive(_ active: Bool) {
+        processingQueue.sync {
+            guard isAirKeyboardActive != active else { return }
+            isAirKeyboardActive = active
+            if active {
+                let actions = gestureRecognizer.resetForTrackingLoss()
+                if actions.contains(.endDrag) { cursorController.endDrag() }
+                windowCoordinator.stop(message: "Air Keyboard active; cursor and window gestures are paused.")
+            } else {
+                gestureRecognizer = GestureRecognizer()
+                windowCoordinator.stop(message: "Air Keyboard inactive; gesture controls are available.")
+            }
+        }
+    }
+
     func processFrame(_ joints: [HandJoint]) {
         processFrame([joints])
     }
@@ -64,6 +80,7 @@ final class CursorControlCoordinator: @unchecked Sendable {
     func processFrame(_ hands: [[HandJoint]]) {
         processingQueue.async { [weak self] in
             guard let self, cameraIsRunning else { return }
+            guard !isAirKeyboardActive else { return }
             let suppressCursor = windowCoordinator.processFrame(
                 hands,
                 timestamp: ProcessInfo.processInfo.systemUptime
