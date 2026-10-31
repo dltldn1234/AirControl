@@ -32,6 +32,7 @@ struct SettingsView: View {
     @State private var accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
     @State private var statusMessage = ""
     @StateObject private var airKeyboardCoordinator = AirKeyboardCoordinator.shared
+    @StateObject private var calibrationManager = CalibrationManager.shared
 
     var body: some View {
         Form {
@@ -118,6 +119,47 @@ struct SettingsView: View {
                     Text(statusMessage)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section("Calibration") {
+                Toggle(
+                    "Mirror camera coordinates",
+                    isOn: Binding(
+                        get: { calibrationManager.profile.mirrorsCamera },
+                        set: { calibrationManager.setMirrorsCamera($0) }
+                    )
+                )
+                LabeledContent(
+                    "Profile",
+                    value: calibrationManager.profile.isCalibrated ? "Calibrated" : "Default range"
+                )
+                if let step = calibrationManager.currentStep {
+                    Text(step.instruction)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Button("Capture Step") {
+                        calibrationManager.captureCurrentStep()
+                    }
+                    Button("Cancel Calibration") {
+                        calibrationManager.reset()
+                    }
+                } else {
+                    HStack {
+                        Button("Start Calibration") {
+                            calibrationManager.startWizard()
+                        }
+                        Button("Reset Calibration", role: .destructive) {
+                            calibrationManager.reset()
+                        }
+                        .disabled(!calibrationManager.profile.isCalibrated)
+                    }
+                }
+                Text(calibrationManager.statusMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Start the camera before capturing samples. Calibration stays on this Mac user account.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Window and app control") {
