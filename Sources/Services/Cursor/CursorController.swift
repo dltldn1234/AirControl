@@ -1,5 +1,6 @@
 import ApplicationServices
 import CoreGraphics
+import Foundation
 
 struct CursorPermissionGate {
     static func allowsInput(isEnabled: Bool, isTrusted: Bool) -> Bool {
@@ -9,7 +10,7 @@ struct CursorPermissionGate {
 
 final class CursorController {
     private let eventQueue = DispatchQueue(label: "aircontrol.cursor.events", qos: .userInteractive)
-    private var smoother = CursorSmoother()
+    private var smoother = OneEuroCursorFilter()
     private var isEnabled = false
     private var isDragging = false
 
@@ -50,7 +51,18 @@ final class CursorController {
                 x: min(max(point.x, displayBounds.minX), displayBounds.maxX),
                 y: min(max(point.y, displayBounds.minY), displayBounds.maxY)
             )
-            let smoothedPoint = smoother.apply(boundedPoint, alpha: alpha, deadZone: deadZone)
+            let filterConfiguration = CursorFilterConfiguration(
+                minimumCutoff: 0.6 + alpha * 1.6,
+                beta: 0.0008 + (1 - alpha) * 0.01,
+                deadZone: deadZone,
+                maximumSpeed: 5_000,
+                maximumJump: max(displayBounds.width, displayBounds.height) * 0.35
+            )
+            let smoothedPoint = smoother.apply(
+                boundedPoint,
+                timestamp: ProcessInfo.processInfo.systemUptime,
+                configuration: filterConfiguration
+            )
             postMouseEvent(.mouseMoved, at: smoothedPoint)
         }
     }
