@@ -109,6 +109,13 @@ struct AirKeyboardTests {
         #expect(!AirKeyboardPermissionGate.allowsInput(isActive: true, isTrusted: true, isSecureFieldFocused: true))
     }
 
+    @Test
+    func keyboardModeSuppressesCursorAndWindowGestureProcessing() {
+        #expect(CursorGestureInputGate.allowsInput(cameraIsRunning: true, airKeyboardIsActive: false))
+        #expect(!CursorGestureInputGate.allowsInput(cameraIsRunning: true, airKeyboardIsActive: true))
+        #expect(!CursorGestureInputGate.allowsInput(cameraIsRunning: false, airKeyboardIsActive: false))
+    }
+
     private func key(_ label: String) -> AirKeyboardKey {
         AirKeyboardKey(id: label, label: label, action: .character(key: Character(label), shifted: false))
     }

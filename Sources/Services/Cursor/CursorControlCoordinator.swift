@@ -1,6 +1,12 @@
 import CoreGraphics
 import Foundation
 
+enum CursorGestureInputGate {
+    static func allowsInput(cameraIsRunning: Bool, airKeyboardIsActive: Bool) -> Bool {
+        cameraIsRunning && !airKeyboardIsActive
+    }
+}
+
 final class CursorControlCoordinator: @unchecked Sendable {
     static let shared = CursorControlCoordinator()
 
@@ -79,8 +85,11 @@ final class CursorControlCoordinator: @unchecked Sendable {
 
     func processFrame(_ hands: [[HandJoint]]) {
         processingQueue.async { [weak self] in
-            guard let self, cameraIsRunning else { return }
-            guard !isAirKeyboardActive else { return }
+            guard let self,
+                  CursorGestureInputGate.allowsInput(
+                    cameraIsRunning: cameraIsRunning,
+                    airKeyboardIsActive: isAirKeyboardActive
+                  ) else { return }
             let suppressCursor = windowCoordinator.processFrame(
                 hands,
                 timestamp: ProcessInfo.processInfo.systemUptime
