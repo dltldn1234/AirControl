@@ -25,6 +25,45 @@ struct CursorCoordinateMapper {
     }
 }
 
+struct DisplayCoordinateMapper {
+    static func activeDisplayBounds() -> [CGRect] {
+        var displayCount: UInt32 = 0
+        guard CGGetActiveDisplayList(0, nil, &displayCount) == .success, displayCount > 0 else {
+            return [CGDisplayBounds(CGMainDisplayID())]
+        }
+        var displayIDs = [CGDirectDisplayID](repeating: 0, count: Int(displayCount))
+        var activeCount = displayCount
+        guard CGGetActiveDisplayList(displayCount, &displayIDs, &activeCount) == .success, activeCount > 0 else {
+            return [CGDisplayBounds(CGMainDisplayID())]
+        }
+        return displayIDs.prefix(Int(activeCount)).map(CGDisplayBounds)
+    }
+
+    static func virtualBounds(for displays: [CGRect]) -> CGRect {
+        displays.reduce(.null) { $0.union($1) }
+    }
+
+    static func constrain(_ point: CGPoint, to displays: [CGRect]) -> CGPoint {
+        if displays.contains(where: { $0.contains(point) }) { return point }
+        guard let nearest = displays.min(by: { distanceSquared(point, to: $0) < distanceSquared(point, to: $1) }) else {
+            return point
+        }
+        let safeFrame = nearest.insetBy(dx: min(1, nearest.width / 2), dy: min(1, nearest.height / 2))
+        return CGPoint(
+            x: min(max(point.x, safeFrame.minX), safeFrame.maxX),
+            y: min(max(point.y, safeFrame.minY), safeFrame.maxY)
+        )
+    }
+
+    private static func distanceSquared(_ point: CGPoint, to rect: CGRect) -> CGFloat {
+        let closestX = min(max(point.x, rect.minX), rect.maxX)
+        let closestY = min(max(point.y, rect.minY), rect.maxY)
+        let deltaX = point.x - closestX
+        let deltaY = point.y - closestY
+        return deltaX * deltaX + deltaY * deltaY
+    }
+}
+
 struct CursorSmoother {
     private(set) var previousPoint: CGPoint?
 
