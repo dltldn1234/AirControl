@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @AppStorage("cursorControlEnabled") private var cursorControlEnabled = false
@@ -197,6 +198,8 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            SettingsBackupSection()
+
             Section("Air Keyboard") {
                 Toggle(
                     "Enable Air Keyboard mode",
@@ -264,6 +267,57 @@ struct SettingsView: View {
             sensitivity: airKeyboardSensitivity,
             language: language
         )
+    }
+}
+
+private struct SettingsBackupSection: View {
+    @State private var statusMessage = ""
+
+    var body: some View {
+        Section("Settings backup") {
+            HStack {
+                Button("Export Settings…", action: exportSettings)
+                Button("Import Settings…", action: importSettings)
+            }
+            Text("Only AirControl preferences are included. Imported cursor and keyboard control remain off.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if !statusMessage.isEmpty {
+                Text(statusMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func exportSettings() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "AirControl-settings.json"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try AirControlSettingsBackup().write(to: url)
+            statusMessage = "Settings exported."
+        } catch {
+            statusMessage = "Could not export settings: \(error.localizedDescription)"
+        }
+    }
+
+    private func importSettings() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let backup = try AirControlSettingsBackup.read(from: url)
+            CursorControlCoordinator.shared.emergencyStop()
+            AirKeyboardCoordinator.shared.stop()
+            try backup.apply()
+            statusMessage = "Settings imported. Cursor and keyboard control remain off."
+        } catch {
+            statusMessage = "Could not import settings: \(error.localizedDescription)"
+        }
     }
 }
 

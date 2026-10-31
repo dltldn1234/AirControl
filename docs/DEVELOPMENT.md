@@ -30,3 +30,5 @@ Unit tests cover deterministic logic. They do not grant camera or Accessibility 
 ## GitHub Actions
 
 `.github/workflows/macos.yml` provides the same generation, lint, test, and Release build checks as a manually dispatched workflow. It intentionally has no automatic push or pull-request trigger. Dispatching GitHub-hosted macOS workflows may consume included Actions minutes and can incur charges after the included allowance, so review the repository/account billing allowance before running it.
+
+Settings backups are versioned JSON and contain only the explicit AirControl preference allowlist plus cursor calibration. Camera frames, typed text, unrelated `UserDefaults`, and active input state are excluded. Import validates values and leaves cursor, keyboard, window, and app-switch control disabled.
