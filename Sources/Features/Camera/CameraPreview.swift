@@ -6,12 +6,12 @@ struct CameraPreview: NSViewRepresentable {
 
     func makeNSView(context: Context) -> CameraPreviewNSView {
         let view = CameraPreviewNSView()
-        view.previewLayer.session = session
+        view.setSession(session)
         return view
     }
 
     func updateNSView(_ view: CameraPreviewNSView, context: Context) {
-        view.previewLayer.session = session
+        view.setSession(session)
     }
 }
 
@@ -32,5 +32,18 @@ final class CameraPreviewNSView: NSView {
     override func layout() {
         super.layout()
         previewLayer.frame = bounds
+        updateMirroring()
+    }
+
+    func setSession(_ session: AVCaptureSession) {
+        previewLayer.session = session
+        updateMirroring()
+    }
+
+    private func updateMirroring() {
+        guard let connection = previewLayer.connection,
+              connection.isVideoMirroringSupported else { return }
+        connection.automaticallyAdjustsVideoMirroring = false
+        connection.isVideoMirrored = true
     }
 }
