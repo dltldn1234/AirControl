@@ -19,6 +19,28 @@ struct AirKeyboardTests {
     }
 
     @Test
+    func koreanMiddleRowMapsOnlyTheNineDubeolsikLetterKeys() {
+        let middleRow = AirKeyboardLayout.rows(for: .korean)[2]
+        let mappings = Dictionary(uniqueKeysWithValues: middleRow.compactMap { key -> (Character, Character)? in
+            guard case let .character(physicalKey, _) = key.action,
+                  let label = key.label.first else { return nil }
+            return (label, physicalKey)
+        })
+
+        #expect(mappings["ㅁ"] == "a")
+        #expect(mappings["ㄴ"] == "s")
+        #expect(mappings["ㅇ"] == "d")
+        #expect(mappings["ㄹ"] == "f")
+        #expect(mappings["ㅎ"] == "g")
+        #expect(mappings["ㅗ"] == "h")
+        #expect(mappings["ㅓ"] == "j")
+        #expect(mappings["ㅏ"] == "k")
+        #expect(mappings["ㅣ"] == "l")
+        #expect(mappings.count == 9)
+        #expect(!mappings.values.contains(";"))
+    }
+
+    @Test
     func pointerMappingMirrorsCameraXCoordinate() {
         let point = AirKeyboardPointerMapper.map(
             normalizedX: 0.2,
