@@ -9,6 +9,34 @@ final class CameraMetricsTests: XCTestCase {
         XCTAssertFalse(CameraPermissionGate.allowsCapture(for: .notDetermined))
     }
 
+    func testCameraSelectionPrefersSavedDeviceAndFallsBackSafely() {
+        XCTAssertEqual(
+            CameraDeviceSelection.resolve(
+                preferredID: "external",
+                availableIDs: ["built-in", "external"],
+                frontCameraID: "built-in"
+            ),
+            "external"
+        )
+        XCTAssertEqual(
+            CameraDeviceSelection.resolve(
+                preferredID: "disconnected",
+                availableIDs: ["external", "built-in"],
+                frontCameraID: "built-in"
+            ),
+            "built-in"
+        )
+        XCTAssertEqual(
+            CameraDeviceSelection.resolve(
+                preferredID: nil,
+                availableIDs: ["external"],
+                frontCameraID: nil
+            ),
+            "external"
+        )
+        XCTAssertNil(CameraDeviceSelection.resolve(preferredID: nil, availableIDs: [], frontCameraID: nil))
+    }
+
     func testCameraInterruptionReasonMapsToActionableStatus() {
         XCTAssertEqual(
             CameraManagerStatus.interruptionMessage,

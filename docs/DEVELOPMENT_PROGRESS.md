@@ -35,6 +35,12 @@ Updated: 2026-11-01
 - Added a regression test for all nine Korean labels and absence of a semicolon key. Latest macOS arm64 suite: 63 passed, 0 failed, 0 skipped; Debug build and strict SwiftLint pass.
 - This validates the layout mapping only. Actual Korean IME composition and the configured Control-Space shortcut still require manual validation in a regular text field.
 
+## Latest continuation: camera selection
+
+- Issue #39 adds built-in/external camera discovery, a saved camera choice, permission/empty/disconnected states, refresh on device attach/detach, and safe fallback to the built-in front camera or first available device.
+- The selected device applies on the next camera start; switching an active capture session is intentionally not implied.
+- Camera preference/fallback tests are included. Live device enumeration and external camera capture still require manual hardware validation.
+
 ## Manual verification still required
 
 - Run the calibration wizard with the built-in camera and confirm cursor range and pinch thresholds feel correct.
