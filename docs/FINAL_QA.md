@@ -23,7 +23,7 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 17 | macOS build succeeds | PASS | Tuist generation and Debug test build passed; Release build passed. |
 | 18 | Automated tests pass | PASS | Latest suite: 68 passed, 0 failed, 0 skipped. Includes paired mouse event safety, double-click action/cooldown/event-state sequence, bounded frame buffering, Korean Dubeolsik mapping, camera selection fallback, and lifecycle generation tests; camera start/stop hardware races, live camera enumeration/capture, latency, and Korean IME composition remain NOT TESTED. |
 | 19 | Documentation is current | PASS | README and architecture, development, gesture, calibration, testing, troubleshooting, release, keyboard, and QA docs are present. |
-| 20 | Local app bundle is ready | PASS | Universal local `.app` and ZIP were created, inspected, and smoke-launched at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/`. Bundle contains an ad-hoc linker signature only; Developer ID signing/notarization is not included. |
+| 20 | Local app bundle is ready | PASS | Release `.app` and ZIP are at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r3/`. Info.plist, ZIP extraction, and universal x86_64/arm64 executable were verified. Bundle has an ad-hoc linker signature; Developer ID signing/notarization is not included. This r3 artifact was not launch-smoke-tested. |
 
 ## Phase status
 

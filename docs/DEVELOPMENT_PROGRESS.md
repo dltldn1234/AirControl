@@ -15,7 +15,7 @@ Updated: 2026-11-01
 - Camera stop now detaches and drains the serial frame queue before removing session resources; CPU timing resets across restart. FPS and CPU calculations reject invalid intervals and have deterministic tests.
 - A manually dispatched macOS CI workflow is configured. It has not been run; GitHub-hosted macOS minutes can incur charges beyond the account allowance.
 - Phase 11/14 Issue #23 was merged through PR #24; a local universal Release app and ZIP were created and opened once as a smoke test. They have only an ad-hoc linker signature; Developer ID signing and notarization are not configured.
-- Latest artifacts (built from `main` after PR #30): `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/AirControl.app` and `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r2/AirControl-local.zip`; ZIP integrity, universal x86_64/arm64 architecture, bundle identifier, and macOS 14 minimum were checked.
+- Latest artifacts (built from `main` after PR #46): `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r3/AirControl.app` and `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r3/AirControl-local.zip`; ZIP integrity, universal x86_64/arm64 architecture, bundle identifier, and macOS 14 minimum were checked. The ZIP SHA-256 is `afd5c5b7639eb0ccdfdabeb2b409478e4b5589c3a51e9a7f42bb542012010b20`.
 - Follow-up Issue #25 was merged through PR #26 and adds camera interruption and fatal runtime-error reporting.
 - Follow-up Issue #27 was merged through PR #28 and adds per-pinch action mapping and duplicate-action feedback.
 - Issue #29 was merged through PR #30 and adds allowlisted JSON settings export/import.
