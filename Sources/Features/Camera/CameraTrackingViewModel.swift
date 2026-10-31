@@ -55,6 +55,25 @@ final class CameraTrackingViewModel: ObservableObject {
                 self?.cpuUsagePercent = cpuUsagePercent
             }
         }
+        cameraManager.onStatus = { [weak self] cameraStatus in
+            Task { @MainActor in
+                guard let self else { return }
+                switch cameraStatus {
+                case let .interrupted(message):
+                    self.status = message
+                case .resumed:
+                    self.status = self.isRunning ? "Camera resumed · looking for a hand…" : "Camera resumed."
+                case let .failed(message):
+                    self.cursorCoordinator.setCameraRunning(false)
+                    AirKeyboardCoordinator.shared.setCameraRunning(false)
+                    self.isRunning = false
+                    self.isStarting = false
+                    self.cursorControlEnabled = false
+                    UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
+                    self.status = "Camera error: \(message)"
+                }
+            }
+        }
     }
 
     func startCamera() {
