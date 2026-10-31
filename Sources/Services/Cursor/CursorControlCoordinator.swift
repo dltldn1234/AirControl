@@ -127,7 +127,9 @@ final class CursorControlCoordinator: @unchecked Sendable {
     private func handle(_ action: GestureAction, sensitivity: Double, smoothing: Double) {
         switch action {
         case let .move(normalizedX, normalizedY):
-            let bounds = CGDisplayBounds(CGMainDisplayID())
+            let bounds = DisplayCoordinateMapper.virtualBounds(
+                for: DisplayCoordinateMapper.activeDisplayBounds()
+            )
             let point = CursorCoordinateMapper.map(
                 normalizedX: normalizedX,
                 normalizedY: normalizedY,

@@ -46,11 +46,9 @@ final class CursorController {
                     isEnabled: isEnabled,
                     isTrusted: isAccessibilityTrusted
                   ) else { return }
-            let displayBounds = CGDisplayBounds(CGMainDisplayID()).insetBy(dx: 1, dy: 1)
-            let boundedPoint = CGPoint(
-                x: min(max(point.x, displayBounds.minX), displayBounds.maxX),
-                y: min(max(point.y, displayBounds.minY), displayBounds.maxY)
-            )
+            let displays = DisplayCoordinateMapper.activeDisplayBounds()
+            let displayBounds = DisplayCoordinateMapper.virtualBounds(for: displays)
+            let boundedPoint = DisplayCoordinateMapper.constrain(point, to: displays)
             let filterConfiguration = CursorFilterConfiguration(
                 minimumCutoff: 0.6 + alpha * 1.6,
                 beta: 0.0008 + (1 - alpha) * 0.01,
