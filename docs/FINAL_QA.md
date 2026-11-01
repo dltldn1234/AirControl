@@ -23,7 +23,7 @@ Updated: 2026-11-01. PASS means the stated software/build evidence exists; it do
 | 17 | macOS build succeeds | PASS | Tuist generation and Debug test build passed; Release build passed. |
 | 18 | Automated tests pass | PASS | Latest suite: 69 passed, 0 failed, 0 skipped. Includes camera permission-state presentation, paired mouse event safety, double-click action/cooldown/event-state sequence, bounded frame buffering, Korean Dubeolsik mapping, camera selection fallback, and lifecycle generation tests; camera start/stop hardware races, live camera enumeration/capture, live permission transitions, latency, and Korean IME composition remain NOT TESTED. |
 | 19 | Documentation is current | PASS | README and architecture, development, gesture, calibration, testing, troubleshooting, release, keyboard, and QA docs are present. |
-| 20 | Local app bundle is ready | PASS | Release `.app` and ZIP are at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r3/`. Info.plist, ZIP extraction, and universal x86_64/arm64 executable were verified. Bundle has an ad-hoc linker signature; Developer ID signing/notarization is not included. This r3 artifact was not launch-smoke-tested. |
+| 20 | Local app bundle is ready | PASS | Latest Release `.app` and ZIP are at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r4/`. Info.plist, ZIP extraction, and universal x86_64/arm64 executable were verified; bundle ID is `com.dltldn1234.AirControl`, minimum macOS is 14.0, and ZIP SHA-256 is `00d4ea7563db56a8327857128a59a0fa20d42ae709e2357f25caa810256b3598`. Bundle has an ad-hoc linker signature; Developer ID signing/notarization is not included. This r4 artifact was not launch-smoke-tested. |
 
 ## Phase status
 
