@@ -65,8 +65,7 @@ struct SettingsCategoryForm: View {
                         Spacer()
                         Button("Request Access") {
                             _ = CursorControlCoordinator.shared.requestAccessibilityAccess()
-                            accessibilityAuthorized =
-                                CursorControlCoordinator.shared.isAccessibilityTrusted
+                            refreshPermissionStatuses()
                             statusMessage =
                                 accessibilityAuthorized
                                 ? "Accessibility access is ready."
@@ -218,12 +217,11 @@ struct SettingsCategoryForm: View {
         }
         .formStyle(.grouped)
         .onAppear {
-            accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
-            refreshCameraAuthorizationStatus()
+            refreshPermissionStatuses()
             applyAirKeyboardSettings()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            refreshCameraAuthorizationStatus()
+            refreshPermissionStatuses()
         }
     }
 
@@ -238,6 +236,11 @@ struct SettingsCategoryForm: View {
 
     private func refreshCameraAuthorizationStatus() {
         cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
+    }
+
+    private func refreshPermissionStatuses() {
+        accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
+        refreshCameraAuthorizationStatus()
     }
 
     private func applyAirKeyboardSettings() {
