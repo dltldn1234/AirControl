@@ -62,6 +62,12 @@ Updated: 2026-11-01
 - Added status-presentation coverage for authorized, not-determined, denied, and restricted states. macOS arm64 suite: 69 passed, 0 failed, 0 skipped; Release build passed; strict SwiftLint reported 0 violations in 43 files.
 - This verifies state mapping and compilation, not a live macOS permission change or camera capture.
 
+## Latest continuation: Accessibility permission refresh
+
+- Issue #52 uses the General settings app-activation refresh to update Accessibility trust alongside camera authorization. The explicit Accessibility permission request button uses the same refresh path.
+- The app continues to rely on macOS Accessibility authorization and does not attempt to bypass it. Live permission changes in System Settings still need manual confirmation.
+- Verification: Tuist generation succeeded; macOS arm64 suite passed 69 tests (0 failed, 0 skipped); strict SwiftLint reported 0 violations in 43 files; Release build passed.
+
 ## Latest continuation: paired mouse click dispatch
 
 - Issue #45 routes left click, right click, and each click in a double-click through a paired event path that constructs both down and up events before posting either one.
