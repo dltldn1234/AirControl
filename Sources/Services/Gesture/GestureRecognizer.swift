@@ -49,6 +49,7 @@ struct GestureConfiguration {
     var pinchStartThreshold = 0.32
     var pinchReleaseThreshold = 0.48
     var dragStartDelay: TimeInterval = 0.45
+    var gestureConfidenceThreshold = 0.55
     var scrollStartThreshold = 0.055
     var scrollDeadZone = 0.008
     var scrollSensitivity = 1.0
@@ -69,46 +70,72 @@ private struct HandGesturePose {
 
     let indexTip: CGPoint
     let indexPinch: Double
+    let indexPinchConfidence: Double
     let middlePinch: Double
+    let middlePinchConfidence: Double
     let scrollPose: Bool
+    let scrollConfidence: Double
 
     init?(joints: [HandJoint]) {
         // Cursor position always comes from the index fingertip. A low-confidence
         // fingertip is treated as tracking loss so the cursor cannot jump to a
         // palm or wrist fallback.
-        guard let indexTip = Self.point(
+        guard let indexTip = Self.joint(
             "indexTip",
             in: joints,
             minimumConfidence: Self.cursorTipConfidenceThreshold
         ),
-              let wrist = Self.point("wrist", in: joints),
-              let indexMCP = Self.point("indexMCP", in: joints),
-              let thumbTip = Self.point("thumbTip", in: joints) else { return nil }
-        self.indexTip = indexTip
-        let palmScale = max(Self.distance(indexMCP, wrist), 0.001)
-        indexPinch = Self.distance(thumbTip, indexTip) / palmScale
-        if let middleTip = Self.point("middleTip", in: joints),
-           let middleMCP = Self.point("middleMCP", in: joints) {
-            let middleScale = max(Self.distance(middleMCP, wrist), 0.001)
-            middlePinch = Self.distance(thumbTip, middleTip) / middleScale
-            scrollPose = Self.distance(indexTip, indexMCP) > palmScale * 0.75
-                && Self.distance(middleTip, middleMCP) > middleScale * 0.75
+              let wrist = Self.joint("wrist", in: joints),
+              let indexMCP = Self.joint("indexMCP", in: joints),
+              let thumbTip = Self.joint("thumbTip", in: joints) else { return nil }
+        self.indexTip = Self.point(indexTip)
+        let wristPoint = Self.point(wrist)
+        let indexMCPPoint = Self.point(indexMCP)
+        let thumbTipPoint = Self.point(thumbTip)
+        let indexTipPoint = Self.point(indexTip)
+        let palmScale = max(Self.distance(indexMCPPoint, wristPoint), 0.001)
+        indexPinch = Self.distance(thumbTipPoint, indexTipPoint) / palmScale
+        indexPinchConfidence = min(
+            indexTip.confidence,
+            min(thumbTip.confidence, min(indexMCP.confidence, wrist.confidence))
+        )
+        if let middleTip = Self.joint("middleTip", in: joints),
+           let middleMCP = Self.joint("middleMCP", in: joints) {
+            let middleTipPoint = Self.point(middleTip)
+            let middleMCPPoint = Self.point(middleMCP)
+            let middleScale = max(Self.distance(middleMCPPoint, wristPoint), 0.001)
+            middlePinch = Self.distance(thumbTipPoint, middleTipPoint) / middleScale
+            middlePinchConfidence = min(
+                indexPinchConfidence,
+                min(middleTip.confidence, middleMCP.confidence)
+            )
+            scrollConfidence = min(
+                indexPinchConfidence,
+                min(middleTip.confidence, middleMCP.confidence)
+            )
+            scrollPose = Self.distance(indexTipPoint, indexMCPPoint) > palmScale * 0.75
+                && Self.distance(middleTipPoint, middleMCPPoint) > middleScale * 0.75
                 && indexPinch > 0.48 && middlePinch > 0.48
         } else {
             middlePinch = .greatestFiniteMagnitude
+            middlePinchConfidence = 0
+            scrollConfidence = 0
             scrollPose = false
         }
     }
 
-    private static func point(
+    private static func joint(
         _ name: String,
         in joints: [HandJoint],
         minimumConfidence: Double = 0.25
-    ) -> CGPoint? {
-        guard let joint = joints.first(where: {
+    ) -> HandJoint? {
+        joints.first(where: {
             $0.name.contains(name) && $0.confidence >= minimumConfidence
-        }) else { return nil }
-        return CGPoint(x: joint.normalizedX, y: joint.normalizedY)
+        })
+    }
+
+    private static func point(_ joint: HandJoint) -> CGPoint {
+        CGPoint(x: joint.normalizedX, y: joint.normalizedY)
     }
 
     private static func distance(_ lhs: CGPoint, _ rhs: CGPoint) -> Double {
@@ -137,9 +164,22 @@ struct GestureRecognizer {
         guard let pose = HandGesturePose(joints: joints) else { return resetForTrackingLoss() }
         guard configuration.cursorEnabled || configuration.leftClickEnabled || configuration.rightClickEnabled
             || configuration.scrollEnabled else { return resetForTrackingLoss() }
-        if activeGesture == .scroll { return processScroll(pose, configuration: configuration) }
+        if isPinching, pinchConfidence(pose) < configuration.gestureConfidenceThreshold {
+            return resetForTrackingLoss()
+        }
+        if activeGesture == .scroll {
+            guard pose.scrollConfidence >= configuration.gestureConfidenceThreshold else {
+                activeGesture = .trackingLost
+                clearScrollState()
+                return []
+            }
+            return processScroll(pose, configuration: configuration)
+        }
         if isPinching { return processPinch(pose, timestamp: timestamp, configuration: configuration) }
-        if pose.scrollPose, configuration.scrollEnabled, configuration.scrollGestureEnabled {
+        if pose.scrollPose,
+           pose.scrollConfidence >= configuration.gestureConfidenceThreshold,
+           configuration.scrollEnabled,
+           configuration.scrollGestureEnabled {
             guard let scrollCandidateY else {
                 self.scrollCandidateY = pose.indexTip.y
                 return []
@@ -257,9 +297,11 @@ struct GestureRecognizer {
 
     private func pinchSource(_ pose: HandGesturePose, configuration: GestureConfiguration) -> ActiveGesture? {
         let indexPinchIsActive = configuration.indexPinchMapping != .disabled
+            && pose.indexPinchConfidence >= configuration.gestureConfidenceThreshold
             && pose.indexPinch <= configuration.pinchStartThreshold
         let middlePinchIsActive = configuration.rightClickGestureEnabled
             && configuration.middlePinchMapping != .disabled
+            && pose.middlePinchConfidence >= configuration.gestureConfidenceThreshold
             && pose.middlePinch <= configuration.pinchStartThreshold
         guard indexPinchIsActive || middlePinchIsActive else { return nil }
         guard indexPinchIsActive, middlePinchIsActive else {
@@ -274,6 +316,10 @@ struct GestureRecognizer {
 
     private func pinchDistance(_ pose: HandGesturePose) -> Double {
         pinchType == .click ? pose.indexPinch : pose.middlePinch
+    }
+
+    private func pinchConfidence(_ pose: HandGesturePose) -> Double {
+        pinchType == .click ? pose.indexPinchConfidence : pose.middlePinchConfidence
     }
 
     private mutating func clearScrollState() {
