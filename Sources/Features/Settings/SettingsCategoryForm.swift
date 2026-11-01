@@ -10,6 +10,7 @@ struct SettingsCategoryForm: View {
     @AppStorage("cursorSensitivity") private var cursorSensitivity = 1.0
     @AppStorage("cursorSmoothing") private var cursorSmoothing = 0.4
     @AppStorage("pinchSensitivity") private var pinchSensitivity = 1.0
+    @AppStorage("gestureConfidenceThreshold") private var gestureConfidenceThreshold = 0.55
     @AppStorage("dragStartDelay") private var dragStartDelay = 0.45
     @AppStorage("showsCameraPreview") private var showsCameraPreview = true
     @AppStorage("scrollSensitivity") private var scrollSensitivity = 1.0
@@ -125,6 +126,13 @@ struct SettingsCategoryForm: View {
                     }
                     Slider(value: $pinchSensitivity, in: 0.6...1.4, step: 0.05) {
                         Text("Pinch sensitivity")
+                    }
+                    Slider(value: $gestureConfidenceThreshold, in: 0.45...0.9, step: 0.05) {
+                        Text("Gesture confidence")
+                    } minimumValueLabel: {
+                        Text("Responsive")
+                    } maximumValueLabel: {
+                        Text("Strict")
                     }
                     Slider(value: $dragStartDelay, in: 0.2...1, step: 0.05) {
                         Text("Drag hold time")

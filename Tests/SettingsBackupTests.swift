@@ -62,6 +62,27 @@ final class SettingsBackupTests: XCTestCase {
         XCTAssertFalse(defaults.bool(forKey: "appSwitchEnabled"))
     }
 
+    func testGestureConfidenceThresholdIsExportedAndClampedOnImport() throws {
+        let suiteName = "AirControlSettingsBackupTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(0.82, forKey: "gestureConfidenceThreshold")
+
+        XCTAssertEqual(
+            AirControlSettingsBackup(defaults: defaults).doubles["gestureConfidenceThreshold"],
+            0.82
+        )
+
+        let backup = AirControlSettingsBackup(
+            doubles: ["gestureConfidenceThreshold": 2],
+            booleans: [:],
+            strings: [:]
+        )
+        try backup.apply(to: defaults)
+
+        XCTAssertEqual(defaults.double(forKey: "gestureConfidenceThreshold"), 0.9)
+    }
+
     func testImportRejectsUnknownSchemaVersion() throws {
         let suiteName = "AirControlSettingsBackupTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
