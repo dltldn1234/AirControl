@@ -63,6 +63,31 @@ enum CameraPermissionGate {
     }
 }
 
+struct CameraPermissionPresentation: Equatable {
+    let message: String
+    let symbol: String
+    let needsSystemSettings: Bool
+
+    static func forStatus(_ status: AVAuthorizationStatus) -> Self {
+        switch status {
+        case .authorized:
+            Self(message: "Camera access granted", symbol: "checkmark.shield.fill", needsSystemSettings: false)
+        case .notDetermined:
+            Self(
+                message: "Camera permission is requested when capture starts",
+                symbol: "camera",
+                needsSystemSettings: false
+            )
+        case .denied:
+            Self(message: "Camera access is denied", symbol: "exclamationmark.camera", needsSystemSettings: true)
+        case .restricted:
+            Self(message: "Camera access is restricted", symbol: "camera.badge.ellipsis", needsSystemSettings: true)
+        @unknown default:
+            Self(message: "Camera access status is unavailable", symbol: "camera", needsSystemSettings: false)
+        }
+    }
+}
+
 enum CameraManagerStatus: Equatable {
     case interrupted(String)
     case resumed

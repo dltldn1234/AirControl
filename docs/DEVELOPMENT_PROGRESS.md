@@ -55,6 +55,13 @@ Updated: 2026-11-01
 - Added recognition cooldown, click-state sequence, and settings round-trip coverage. macOS arm64 suite: 67 passed, 0 failed, 0 skipped; Release build passed; strict SwiftLint reported 0 violations in 43 files.
 - Actual system double-click delivery through Accessibility and a hand gesture remains NOT TESTED.
 
+## Latest continuation: camera permission status in General settings
+
+- Issue #50 replaces the static General settings camera-permission sentence with the current AVFoundation authorization state, shared with the Camera settings presentation.
+- The status refreshes when Settings appears and when the app becomes active after returning from System Settings. Denied or restricted states offer a direct Camera privacy settings shortcut; the UI does not prompt for access by itself.
+- Added status-presentation coverage for authorized, not-determined, denied, and restricted states. macOS arm64 suite: 69 passed, 0 failed, 0 skipped; Release build passed; strict SwiftLint reported 0 violations in 43 files.
+- This verifies state mapping and compilation, not a live macOS permission change or camera capture.
+
 ## Latest continuation: paired mouse click dispatch
 
 - Issue #45 routes left click, right click, and each click in a double-click through a paired event path that constructs both down and up events before posting either one.

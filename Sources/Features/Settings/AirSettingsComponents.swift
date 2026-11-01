@@ -253,7 +253,7 @@ struct CameraDeviceSettingsSection: View {
         Section("Camera") {
             Toggle("Show camera preview", isOn: $showsCameraPreview)
             HStack {
-                Label(authorizationMessage, systemImage: authorizationSymbol)
+                Label(permissionPresentation.message, systemImage: permissionPresentation.symbol)
                     .foregroundStyle(authorizationStatus == .denied ? .orange : .secondary)
                 Spacer()
                 Button("Refresh") {
@@ -286,7 +286,7 @@ struct CameraDeviceSettingsSection: View {
             Text("Camera selection takes effect the next time you start the camera.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if authorizationStatus == .denied || authorizationStatus == .restricted {
+            if permissionPresentation.needsSystemSettings {
                 Button("Open Camera Privacy Settings") {
                     guard let url = URL(
                         string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
@@ -304,23 +304,8 @@ struct CameraDeviceSettingsSection: View {
         }
     }
 
-    private var authorizationMessage: String {
-        switch authorizationStatus {
-        case .authorized:
-            "Camera access granted"
-        case .notDetermined:
-            "Camera permission is requested when capture starts"
-        case .denied:
-            "Camera access is denied"
-        case .restricted:
-            "Camera access is restricted"
-        @unknown default:
-            "Camera access status is unavailable"
-        }
-    }
-
-    private var authorizationSymbol: String {
-        authorizationStatus == .authorized ? "checkmark.shield.fill" : "camera"
+    private var permissionPresentation: CameraPermissionPresentation {
+        .forStatus(authorizationStatus)
     }
 
     private func refreshCameras() {

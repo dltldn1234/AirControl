@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -27,6 +28,7 @@ struct SettingsCategoryForm: View {
     @AppStorage("airKeyboardFeedback") private var airKeyboardFeedback = true
     @State private var accessibilityAuthorized = CursorControlCoordinator.shared
         .isAccessibilityTrusted
+    @State private var cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var statusMessage = ""
     @StateObject private var airKeyboardCoordinator = AirKeyboardCoordinator.shared
 
@@ -34,9 +36,24 @@ struct SettingsCategoryForm: View {
         Form {
             if category == .general {
                 Section("Permissions") {
-                    Label(
-                        "Camera access is requested when you start the camera.",
-                        systemImage: "camera")
+                    HStack {
+                        Label(
+                            cameraPermissionPresentation.message,
+                            systemImage: cameraPermissionPresentation.symbol
+                        )
+                        .foregroundStyle(
+                            cameraPermissionStatusColor
+                        )
+                        Spacer()
+                        if cameraPermissionPresentation.needsSystemSettings {
+                            Button("Open Settings") {
+                                guard let url = URL(
+                                    string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
+                                ) else { return }
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                    }
                     HStack {
                         Label(
                             accessibilityAuthorized
@@ -202,8 +219,25 @@ struct SettingsCategoryForm: View {
         .formStyle(.grouped)
         .onAppear {
             accessibilityAuthorized = CursorControlCoordinator.shared.isAccessibilityTrusted
+            refreshCameraAuthorizationStatus()
             applyAirKeyboardSettings()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            refreshCameraAuthorizationStatus()
+        }
+    }
+
+    private var cameraPermissionPresentation: CameraPermissionPresentation {
+        .forStatus(cameraAuthorizationStatus)
+    }
+
+    private var cameraPermissionStatusColor: Color {
+        cameraAuthorizationStatus == .denied || cameraAuthorizationStatus == .restricted
+            ? .orange : .secondary
+    }
+
+    private func refreshCameraAuthorizationStatus() {
+        cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
 
     private func applyAirKeyboardSettings() {
