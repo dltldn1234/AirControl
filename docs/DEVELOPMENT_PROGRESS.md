@@ -68,6 +68,12 @@ Updated: 2026-11-01
 - The app continues to rely on macOS Accessibility authorization and does not attempt to bypass it. Live permission changes in System Settings still need manual confirmation.
 - Verification: Tuist generation succeeded; macOS arm64 suite passed 69 tests (0 failed, 0 skipped); strict SwiftLint reported 0 violations in 43 files; Release build passed.
 
+## Latest local package
+
+- After PR #53, `main` was built as an unsigned local universal Release package at `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r4/AirControl.app` and `/Users/isiu/Desktop/AirControl-builds/Release-2026-11-01-r4/AirControl-local.zip`.
+- Package checks: x86_64 and arm64 executable slices, bundle ID `com.dltldn1234.AirControl`, minimum macOS 14.0, and ZIP integrity verified. ZIP SHA-256: `00d4ea7563db56a8327857128a59a0fa20d42ae709e2357f25caa810256b3598`.
+- The bundle is ad-hoc linker-signed only. This package was not launch-smoke-tested, Developer ID-signed, or notarized.
+
 ## Latest continuation: paired mouse click dispatch
 
 - Issue #45 routes left click, right click, and each click in a double-click through a paired event path that constructs both down and up events before posting either one.
