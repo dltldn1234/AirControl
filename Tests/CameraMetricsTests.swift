@@ -9,6 +9,32 @@ final class CameraMetricsTests: XCTestCase {
         XCTAssertFalse(CameraPermissionGate.allowsCapture(for: .notDetermined))
     }
 
+    func testCameraPermissionPresentationExplainsEachAuthorizationState() {
+        XCTAssertEqual(
+            CameraPermissionPresentation.forStatus(.authorized).message,
+            "Camera access granted"
+        )
+        XCTAssertFalse(CameraPermissionPresentation.forStatus(.authorized).needsSystemSettings)
+
+        XCTAssertEqual(
+            CameraPermissionPresentation.forStatus(.notDetermined).message,
+            "Camera permission is requested when capture starts"
+        )
+        XCTAssertFalse(CameraPermissionPresentation.forStatus(.notDetermined).needsSystemSettings)
+
+        XCTAssertEqual(
+            CameraPermissionPresentation.forStatus(.denied).message,
+            "Camera access is denied"
+        )
+        XCTAssertTrue(CameraPermissionPresentation.forStatus(.denied).needsSystemSettings)
+
+        XCTAssertEqual(
+            CameraPermissionPresentation.forStatus(.restricted).message,
+            "Camera access is restricted"
+        )
+        XCTAssertTrue(CameraPermissionPresentation.forStatus(.restricted).needsSystemSettings)
+    }
+
     func testCameraSelectionPrefersSavedDeviceAndFallsBackSafely() {
         XCTAssertEqual(
             CameraDeviceSelection.resolve(
