@@ -100,6 +100,14 @@ Updated: 2026-11-01
 3. Developer ID signing and notarization require the user's Apple Developer credentials.
 4. Do not claim manual validation without evidence.
 
+## Cross-platform continuation: gesture confidence gating
+
+- macOS Issue #56 adds a saved gesture-confidence threshold (0.45–0.90). Pinch start requires confidence across the measured thumb/index joints; scroll entry requires confidence across the contributing hand joints. A confidence drop during a pending pinch cancels it, and a drop during drag emits a safe drag release.
+- Added regression coverage for configurable thresholds, low-confidence pinch rejection, drag release on confidence loss, scroll suppression, and settings backup clamping.
+- Local verification on macOS 27.2 / arm64: Tuist generation succeeded; `xcodebuild test` passed 74 tests (0 failed, 0 skipped); strict SwiftLint passed (0 violations in 43 files). This does not validate live Vision confidence behavior with the built-in camera.
+- Windows audit: fetched current `main` into `/Users/isiu/Developer/Worktrees/AirControl-Windows/current-main` without modifying the original checkout; remote main has 116 commits at `94bbdc7`. The original checkout's untracked `README 2.md` and `src/App 2.tsx` remain preserved. GitHub currently reports the Windows repository as public, contrary to the earlier private-repository requirement; visibility is unchanged pending explicit review.
+- Windows Issue #27 tracks the opt-in gesture-driven Air Command Palette. The original Windows checkout is not used for this work.
+
 ## Safety notes
 
 - Camera images and typed text are not persisted or sent to a service.
