@@ -3,7 +3,7 @@ import AppKit
 @MainActor
 final class AirControlAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.regular)
         UserDefaults.standard.set(false, forKey: "cursorControlEnabled")
         UserDefaults.standard.set(false, forKey: "airKeyboardEnabled")
         CursorControlCoordinator.shared.stop()
