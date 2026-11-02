@@ -30,11 +30,6 @@ final class WindowManager {
         return WindowGeometry.accessibilityDisplayBounds(screenFrames: frames, primaryScreenFrame: primary)
     }
 
-    func requestAccessibilityAccess() -> Bool {
-        let key = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
-        return AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
-    }
-
     func selectActiveWindow() -> WindowTargetInfo? {
         guard let (application, window) = focusedWindow() else {
             clearSelection()

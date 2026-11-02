@@ -44,7 +44,6 @@ final class AirKeyboardCoordinator: ObservableObject {
             return
         }
         guard inputEngine.isAccessibilityTrusted else {
-            _ = inputEngine.requestAccessibilityAccess()
             statusMessage = "Allow AirControl in System Settings → Privacy & Security → Accessibility."
             return
         }

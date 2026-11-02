@@ -1,3 +1,4 @@
+import AppKit
 import ApplicationServices
 import CoreGraphics
 import Foundation
@@ -34,15 +35,16 @@ final class CursorController {
 
     var isAccessibilityTrusted: Bool { AXIsProcessTrusted() }
 
-    func requestAccessibilityAccess() -> Bool {
-        let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
-        return AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
+    func openAccessibilitySettings() {
+        guard let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        ) else { return }
+        NSWorkspace.shared.open(url)
     }
 
     @discardableResult
     func setEnabled(_ enabled: Bool) -> Bool {
         if enabled, !isAccessibilityTrusted {
-            _ = requestAccessibilityAccess()
             return false
         }
         eventQueue.async { [weak self] in

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CameraTrackingView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = CameraTrackingViewModel()
     @StateObject private var airKeyboardCoordinator = AirKeyboardCoordinator.shared
     @AppStorage("cursorControlEnabled") private var cursorControlEnabled = false
@@ -145,7 +146,7 @@ struct CameraTrackingView: View {
                 )
                 Spacer()
                 if !viewModel.accessibilityAuthorized {
-                    Button("Request Access") { viewModel.requestAccessibilityAccess() }
+                    Button("Open Settings") { viewModel.openAccessibilitySettings() }
                 }
             }
             .font(.caption)
@@ -155,6 +156,11 @@ struct CameraTrackingView: View {
             viewModel.emergencyStop()
             cursorControlEnabled = false
             return .handled
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                viewModel.refreshAccessibilityAuthorization()
+            }
         }
         .focusable()
     }

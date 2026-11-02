@@ -63,22 +63,14 @@ struct SettingsCategoryForm: View {
                                 ? "checkmark.shield.fill" : "exclamationmark.shield.fill"
                         )
                         Spacer()
-                        Button("Request Access") {
-                            _ = CursorControlCoordinator.shared.requestAccessibilityAccess()
+                        Button("Check Again") {
                             refreshPermissionStatuses()
-                            statusMessage =
-                                accessibilityAuthorized
+                            statusMessage = accessibilityAuthorized
                                 ? "Accessibility access is ready."
-                                : "Grant access in System Settings, then return here."
+                                : "Access is still unavailable to this app process."
                         }
                         Button("Open Settings") {
-                            guard
-                                let url = URL(
-                                    string:
-                                        "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-                                )
-                            else { return }
-                            NSWorkspace.shared.open(url)
+                            CursorControlCoordinator.shared.openAccessibilitySettings()
                         }
                     }
                 }

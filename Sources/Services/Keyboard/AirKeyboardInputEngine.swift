@@ -40,12 +40,6 @@ final class AirKeyboardInputEngine: @unchecked Sendable {
 
     var isAccessibilityTrusted: Bool { AXIsProcessTrusted() }
 
-    @discardableResult
-    func requestAccessibilityAccess() -> Bool {
-        let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
-        return AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
-    }
-
     func setEnabled(_ enabled: Bool) {
         eventQueue.sync { isEnabled = enabled }
     }
