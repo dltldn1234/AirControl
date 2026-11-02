@@ -173,12 +173,16 @@ final class CameraTrackingViewModel: ObservableObject {
         }
     }
 
-    func requestAccessibilityAccess() {
-        _ = cursorCoordinator.requestAccessibilityAccess()
+    func openAccessibilitySettings() {
+        cursorCoordinator.openAccessibilitySettings()
+        refreshAccessibilityAuthorization()
+    }
+
+    func refreshAccessibilityAuthorization() {
         accessibilityAuthorized = cursorCoordinator.isAccessibilityTrusted
         status = accessibilityAuthorized
             ? "Accessibility access is ready."
-            : "Grant AirControl access in Privacy & Security → Accessibility, then enable cursor control."
+            : "Enable AirControl in Privacy & Security → Accessibility, then return here."
     }
 
     func emergencyStop() {

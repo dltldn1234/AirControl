@@ -34,14 +34,13 @@ final class CursorControlCoordinator: @unchecked Sendable {
         processingQueue.async { [weak self] in self?.windowCoordinator.setStatusHandler(handler) }
     }
 
-    func requestAccessibilityAccess() -> Bool {
-        cursorController.requestAccessibilityAccess()
+    func openAccessibilitySettings() {
+        cursorController.openAccessibilitySettings()
     }
 
     @discardableResult
     func setEnabled(_ enabled: Bool) -> Bool {
         if enabled, !cursorController.isAccessibilityTrusted {
-            _ = cursorController.requestAccessibilityAccess()
             return false
         }
         return processingQueue.sync {
