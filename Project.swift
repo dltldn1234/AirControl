@@ -10,7 +10,6 @@ let project = Project(
             bundleId: "com.dltldn1234.AirControl",
             infoPlist: .extendingDefault(
                 with: [
-                    "LSUIElement": .boolean(true),
                     "LSApplicationCategoryType": .string("public.app-category.utilities"),
                     "NSCameraUsageDescription": .string(
                         "AirControl will use the camera to recognize hand gestures when tracking is available."
