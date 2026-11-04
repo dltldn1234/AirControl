@@ -283,4 +283,106 @@ struct GestureRecognizerTests {
             HandJoint(name: "thumbTip", normalizedX: 0.35, normalizedY: 0.5, confidence: 1)
         ]
     }
+
+}
+
+struct GestureConfidenceTests {
+    @Test
+    func lowConfidencePinchJointsDoNotStartClickButKeepCursorAvailable() {
+        var recognizer = GestureRecognizer()
+        let joints = loweringConfidence(hand(pinchDistance: 0.02), jointNamed: "thumbTip", to: 0.4)
+
+        let actions = recognizer.process(joints: joints, timestamp: 1)
+
+        #expect(actions.contains { if case .move = $0 { true } else { false } })
+        #expect(!recognizer.isPinching)
+        #expect(recognizer.activeGesture == .cursor)
+    }
+
+    @Test
+    func configuredConfidenceThresholdControlsPinchStart() {
+        var recognizer = GestureRecognizer()
+        var configuration = GestureConfiguration()
+        configuration.gestureConfidenceThreshold = 0.45
+        let joints = loweringConfidence(hand(pinchDistance: 0.02), jointNamed: "thumbTip", to: 0.5)
+
+        _ = recognizer.process(joints: joints, timestamp: 1, configuration: configuration)
+
+        #expect(recognizer.isPinching)
+    }
+
+    @Test
+    func confidenceLossDuringDragReleasesButtonWithoutClick() {
+        var recognizer = GestureRecognizer()
+        _ = recognizer.process(joints: hand(pinchDistance: 0.02), timestamp: 1)
+        let dragActions = recognizer.process(joints: hand(pinchDistance: 0.02), timestamp: 1.5)
+        let uncertainJoints = loweringConfidence(
+            hand(pinchDistance: 0.02),
+            jointNamed: "thumbTip",
+            to: 0.4
+        )
+
+        let lossActions = recognizer.process(joints: uncertainJoints, timestamp: 1.6)
+
+        #expect(dragActions == [.beginDrag])
+        #expect(lossActions == [.endDrag])
+        #expect(!recognizer.isDragging)
+        #expect(recognizer.activeGesture == .trackingLost)
+    }
+
+    @Test
+    func lowConfidenceScrollLandmarkStopsScrollInput() {
+        var recognizer = GestureRecognizer()
+        _ = recognizer.process(joints: scrollHand(indexY: 0.6), timestamp: 1)
+        _ = recognizer.process(joints: scrollHand(indexY: 0.52), timestamp: 1.1)
+        let uncertainJoints = loweringConfidence(scrollHand(indexY: 0.48), jointNamed: "middleTip", to: 0.4)
+
+        let actions = recognizer.process(joints: uncertainJoints, timestamp: 1.2)
+
+        #expect(actions.isEmpty)
+        #expect(recognizer.activeGesture == .trackingLost)
+    }
+
+    private func loweringConfidence(
+        _ joints: [HandJoint],
+        jointNamed name: String,
+        to confidence: Double
+    ) -> [HandJoint] {
+        joints.map { joint in
+            guard joint.name == name else { return joint }
+            return HandJoint(
+                name: joint.name,
+                normalizedX: joint.normalizedX,
+                normalizedY: joint.normalizedY,
+                confidence: confidence
+            )
+        }
+    }
+
+    private func hand(pinchDistance: Double) -> [HandJoint] {
+        [
+            HandJoint(name: "wrist", normalizedX: 0.5, normalizedY: 0.1, confidence: 1),
+            HandJoint(name: "indexMCP", normalizedX: 0.5, normalizedY: 0.3, confidence: 1),
+            HandJoint(name: "middleMCP", normalizedX: 0.7, normalizedY: 0.3, confidence: 1),
+            HandJoint(name: "indexTip", normalizedX: 0.5, normalizedY: 0.6, confidence: 1),
+            HandJoint(name: "middleTip", normalizedX: 0.7, normalizedY: 0.6, confidence: 1),
+            HandJoint(
+                name: "thumbTip",
+                normalizedX: 0.5 + pinchDistance,
+                normalizedY: 0.6,
+                confidence: 1
+            )
+        ]
+    }
+
+    private func scrollHand(indexY: Double) -> [HandJoint] {
+        [
+            HandJoint(name: "wrist", normalizedX: 0.5, normalizedY: 0.1, confidence: 1),
+            HandJoint(name: "indexMCP", normalizedX: 0.5, normalizedY: 0.3, confidence: 1),
+            HandJoint(name: "middleMCP", normalizedX: 0.58, normalizedY: 0.3, confidence: 1),
+            HandJoint(name: "indexTip", normalizedX: 0.5, normalizedY: indexY, confidence: 1),
+            HandJoint(name: "middleTip", normalizedX: 0.58, normalizedY: indexY, confidence: 1),
+            HandJoint(name: "thumbTip", normalizedX: 0.35, normalizedY: 0.5, confidence: 1)
+        ]
+    }
 }

@@ -16,6 +16,6 @@ Cursor and window control are opt-in. Start the camera first; enable cursor cont
 | Three-finger horizontal swipe | Switch visible regular app | Does not switch Spaces or full-screen desktops. |
 | Hand keyboard mode | Select and activate virtual key | Keyboard is opt-in and independent of cursor input. |
 
-Gesture thresholds and behavior can vary with camera framing, lighting, hand pose, and Vision confidence. Use Settings to tune supported sensitivities and calibrate the cursor range.
+Gesture thresholds and behavior can vary with camera framing, lighting, hand pose, and Vision confidence. Use Settings to tune supported sensitivities and calibrate the cursor range. Pinch and scroll actions are gated by a configurable minimum landmark-confidence threshold; if confidence falls during a pinch, a pending click is cancelled and any active drag is released.
 
 Settings lets you map thumb-index and thumb-middle pinches independently to left click, double click, right click, drag, or disabled. Drag follows the configured hold delay. If both pinches use the same action, Settings shows a duplicate-mapping warning; the closer recognized pinch source determines which mapping is active. Synthetic click actions require Accessibility permission and are not sent while cursor control is off.
